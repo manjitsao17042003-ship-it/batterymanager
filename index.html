@@ -354,6 +354,10 @@
                     <button class="btn btn-primary" onclick="App.Batteries.showAddModal()">
                         <i class="bi bi-plus-circle"></i> New
                     </button>
+                    <!-- *** ADDED "Clear All" BUTTON HERE *** -->
+                    <button class="btn btn-danger" onclick="App.Settings.showClearAllModal()">
+                        <i class="bi bi-trash"></i> Clear All
+                    </button>
                 </div>
             </div>
             
@@ -465,11 +469,15 @@
                 <div class="card-body">
                     <h5 class="card-title">Danger Zone</h5>
                     <p class="card-text">Perform irreversible actions.</p>
-                    <button class="btn btn-danger me-2" onclick="App.Settings.showResetModal()">
+                    <button class="btn btn-danger me-2 mb-2" onclick="App.Settings.showResetModal()">
                         <i class="bi bi-calendar-x"></i> Reset Daily Transactions
                     </button>
-                    <!-- Clear All Batteries removed as it's too dangerous in multi-user setup -->
+                    <!-- *** NEW: Re-added Clear All button *** -->
+                    <button class="btn btn-danger mb-2" onclick="App.Settings.showClearAllModal()">
+                        <i class="bi bi-exclamation-triangle"></i> Clear All Batteries & Data
+                    </button>
                     <small class="d-block text-white-50 mt-1">Reset Daily: Clears transactions and marks all batteries as 'Available'.</small>
+                    <small class="d-block text-white-50 mt-1">Clear All: Deletes ALL batteries and ALL transactions permanently.</small>
                 </div>
             </div>
         </div>
@@ -486,7 +494,7 @@
         </a>
         <a class="nav-link" href="#" data-page="give-battery" onclick="App.navigateTo('give-battery')">
             <i class="bi bi-box-arrow-up"></i>
-            <span>Give (Manual)</span> <!-- CHANGED Label -->
+            <span>Give (Manual)</span>
         </a>
         <a class="nav-link" href="#" data-page="return-battery" onclick="App.navigateTo('return-battery')">
             <i class="bi bi-box-arrow-in-down"></i>
@@ -723,6 +731,35 @@
         </div>
     </div>
 
+    <!-- *** NEW: Clear All Confirmation Modal *** -->
+    <div class="modal fade" id="clearAllModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirm DELETE ALL DATA</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This is the most dangerous action. This will permanently delete:</p>
+                    <ul class="list-group">
+                        <li class="list-group-item list-group-item-danger"><strong>ALL Batteries</strong> from the database.</li>
+                        <li class="list-group-item list-group-item-danger"><strong>ALL Transactions</strong> from the database.</li>
+                    </ul>
+                    <p class="mt-3">Your customers and settings will NOT be deleted.</p>
+                    <p class="mt-3"><strong>THIS ACTION CANNOT BE UNDONE.</strong></p>
+                    <div class="mb-3">
+                        <label for="clear-all-confirm-text" class="form-label">Type "DELETE ALL" to confirm:</label>
+                        <input type="text" class="form-control" id="clear-all-confirm-text" placeholder="DELETE ALL">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-clear-all-btn" onclick="App.Settings.confirmClearAllData()">Delete All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- ============================================== -->
     <!-- == TOAST CONTAINER                          == -->
@@ -746,8 +783,6 @@
     <!-- ============================================== -->
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- REMOVED Dexie.js -->
     
     <!-- SheetJS (Excel Export) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -791,6 +826,7 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
+                // This is the user's provided config
                 apiKey: "AIzaSyA-5Z_HVVwHn14czFkt14__srZ4U14ypXw",
                 authDomain: "rental1-7718e.firebaseapp.com",
                 projectId: "rental1-7718e",
@@ -816,6 +852,16 @@
             collection, query, where, getDocs, writeBatch, serverTimestamp,
             Timestamp, limit, documentId
         };
+
+        // *** NEW HELPER FUNCTION ***
+        // Helper function to break an array into chunks
+        const chunkArray = (arr, size) => {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += size) {
+                chunks.push(arr.slice(i, i + size));
+            }
+            return chunks;
+        };
         
         // ----------------------------------------
         // 2. MAIN APP CONTROLLER (Firebase-enabled)
@@ -834,7 +880,8 @@
                 currentBatteryRangeModal: null,
                 currentReturnModal: null,
                 currentQuickGiveModal: null,
-                currentResetModal: null, // NEW
+                currentResetModal: null, 
+                currentClearAllModal: null, // *** NEW ***
                 appToast: null,
                 
                 // Auth & Data State
@@ -883,6 +930,7 @@
                 App.state.currentReturnModal = new bootstrap.Modal(document.getElementById('returnModal'));
                 App.state.currentQuickGiveModal = new bootstrap.Modal(document.getElementById('quickGiveModal'));
                 App.state.currentResetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+                App.state.currentClearAllModal = new bootstrap.Modal(document.getElementById('clearAllModal')); // *** NEW ***
                 App.state.appToast = new bootstrap.Toast(document.getElementById('appToast'));
                 App.loadTheme();
             },
@@ -942,10 +990,18 @@
 
             // Page Navigation
             navigateTo: (pageId) => {
-                if (!App.state.isAuthReady || !App.state.isDataReady) {
-                    console.warn("navigateTo called before auth/data is ready. Ignoring.");
+                if (!App.state.isAuthReady) {
+                    // Don't navigate until auth is complete
+                    console.warn("navigateTo called before auth is ready. Ignoring.");
                     return;
                 }
+                if (pageId === 'dashboard' && !App.state.isDataReady) {
+                     // Allow navigation to dashboard, but skip logic
+                } else if (!App.state.isDataReady) {
+                    console.warn("navigateTo called before data is ready. Ignoring.");
+                    return;
+                }
+
 
                 App.state.currentPage = pageId;
                 // Hide all pages
@@ -1091,6 +1147,8 @@
         App.Dashboard = {
             // This is now triggered by listeners in Batteries and Transactions
             refresh: () => {
+                if (!App.state.isDataReady) return; // Don't refresh if cache isn't ready
+                
                 const market = document.getElementById('dashboardMarketFilter').value;
                 const marketFilter = market === 'All' ? null : market;
 
@@ -1136,6 +1194,8 @@
             },
 
             filterList: () => {
+                if (App.state.currentPage !== 'customers') return; // Only render if page is active
+                
                 const searchTerm = document.getElementById('customer-search').value.toLowerCase();
                 const marketFilter = document.getElementById('customer-market-filter').value;
                 
@@ -1359,6 +1419,8 @@
             },
 
             filterList: () => {
+                if (App.state.currentPage !== 'batteries') return; // Only render if page is active
+                
                 const searchTerm = document.getElementById('battery-search').value.toLowerCase();
                 const statusFilter = document.getElementById('battery-status-filter').value;
                 const marketFilter = document.getElementById('battery-market-filter').value;
@@ -1476,6 +1538,7 @@
                 App.state.currentBatteryRangeModal.show();
             },
 
+            // *** UPDATED: saveRange with chunked duplicate checking ***
             saveRange: async () => {
                 const prefix = document.getElementById('battery-range-prefix').value.trim();
                 const start = parseInt(document.getElementById('battery-range-start').value);
@@ -1492,7 +1555,7 @@
                     return;
                 }
                 const totalToAdd = (end - start + 1);
-                if (totalToAdd > 400) { // Firestore batch limit is 500
+                if (totalToAdd > 400) { // Firestore batch limit is 500, keep this lower
                     App.showToast("Error", "Cannot add more than 400 batteries at a time.", "error");
                     return;
                 }
@@ -1514,15 +1577,25 @@
                 }
 
                 try {
-                    // Check for duplicates first
-                    const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', 'in', batteryNumbers));
-                    const snapshot = await fb.getDocs(q);
-                    const existingNumbers = new Set(snapshot.docs.map(doc => doc.data().batteryNumber));
+                    // Check for duplicates in chunks of 30
+                    const chunks = chunkArray(batteryNumbers, 30);
+                    const existingNumbers = new Set();
+                    
+                    App.showToast("Info", `Checking ${batteryNumbers.length} batteries for duplicates...`, "info");
+
+                    for (const chunk of chunks) {
+                        const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', 'in', chunk));
+                        const snapshot = await fb.getDocs(q);
+                        snapshot.docs.forEach(doc => {
+                            existingNumbers.add(doc.data().batteryNumber);
+                        });
+                    }
 
                     const validBatteriesToAdd = batteriesToAdd.filter(b => !existingNumbers.has(b.batteryNumber));
                     const failedCount = batteriesToAdd.length - validBatteriesToAdd.length;
 
                     if (validBatteriesToAdd.length > 0) {
+                        App.showToast("Info", `Adding ${validBatteriesToAdd.length} new batteries...`, "info");
                         const batch = fb.writeBatch(fb.db);
                         for (const battery of validBatteriesToAdd) {
                             const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.batteries));
@@ -1543,6 +1616,7 @@
                     console.error(e);
                 }
             },
+
 
             delete: async (id, status) => {
                 try {
@@ -1707,6 +1781,11 @@
                     return;
                 }
 
+                if (batteryNumbers.length > 30) {
+                     App.showToast("Error", "Cannot give more than 30 batteries in one manual transaction.", "error");
+                    return;
+                }
+
                 try {
                     // Check all batteries
                     const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', 'in', batteryNumbers));
@@ -1800,6 +1879,8 @@
             },
 
             renderList: () => {
+                if (App.state.currentPage !== 'return-battery') return; // Only render if page is active
+                
                 const listEl = document.getElementById('return-pending-list');
                 const allCustomers = App.state.localCache.customers;
                 
@@ -2101,7 +2182,7 @@
                 }
             },
 
-            // Removed backup/restore/clear all
+            // Removed backup/restore
             downloadFile: (content, fileName, contentType) => {
                 // (Identical to original)
                 const a = document.createElement("a");
@@ -2146,6 +2227,53 @@
                 } catch (error) { 
                     console.error("Reset failed:", error);
                     App.showToast("Error", "Could not reset data.", "error");
+                }
+            },
+
+            // *** NEW: Clear All Functions ***
+            showClearAllModal: () => {
+                document.getElementById('clear-all-confirm-text').value = '';
+                App.state.currentClearAllModal.show();
+            },
+
+            confirmClearAllData: async () => {
+                const confirmText = document.getElementById('clear-all-confirm-text').value;
+                if (confirmText !== "DELETE ALL") {
+                    App.showToast("Error", "Confirmation text does not match.", "error");
+                    return;
+                }
+
+                App.showToast("Info", "DELETING ALL DATA... Please wait.", "info");
+                App.state.currentClearAllModal.hide();
+
+                // Helper function to delete a collection in batches
+                const deleteCollection = async (collectionPath) => {
+                    let snapshot;
+                    do {
+                        const q = fb.query(fb.collection(fb.db, collectionPath), fb.limit(400));
+                        snapshot = await fb.getDocs(q);
+                        
+                        if (snapshot.size === 0) break; // Collection is empty
+
+                        const batch = fb.writeBatch(fb.db);
+                        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                        await batch.commit();
+                        
+                        console.log(`Deleted ${snapshot.size} documents...`);
+                    } while (snapshot.size > 0);
+                };
+
+                try {
+                    console.log("Deleting transactions...");
+                    await deleteCollection(App.state.dbPaths.transactions);
+                    console.log("Deleting batteries...");
+                    await deleteCollection(App.state.dbPaths.batteries);
+
+                    App.showToast("Success", "All batteries and transactions have been deleted.");
+                    // Listeners will update the UI
+                } catch (error) {
+                    console.error("Clear all data failed:", error);
+                    App.showToast("Error", "Could not clear all data.", "error");
                 }
             }
         };
