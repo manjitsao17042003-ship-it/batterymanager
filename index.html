@@ -354,7 +354,7 @@
                     <button class="btn btn-primary" onclick="App.Batteries.showAddModal()">
                         <i class="bi bi-plus-circle"></i> New
                     </button>
-                    <!-- *** ADDED "Clear All" BUTTON HERE *** -->
+                    <!-- *** FIXED: Re-added "Clear All" button *** -->
                     <button class="btn btn-danger" onclick="App.Settings.showClearAllModal()">
                         <i class="bi bi-trash"></i> Clear All
                     </button>
@@ -472,7 +472,6 @@
                     <button class="btn btn-danger me-2 mb-2" onclick="App.Settings.showResetModal()">
                         <i class="bi bi-calendar-x"></i> Reset Daily Transactions
                     </button>
-                    <!-- *** NEW: Re-added Clear All button *** -->
                     <button class="btn btn-danger mb-2" onclick="App.Settings.showClearAllModal()">
                         <i class="bi bi-exclamation-triangle"></i> Clear All Batteries & Data
                     </button>
@@ -703,7 +702,7 @@
         </div>
     </div>
 
-    <!-- NEW: Reset Confirmation Modal -->
+    <!-- Reset Confirmation Modal -->
     <div class="modal fade" id="resetModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -731,7 +730,7 @@
         </div>
     </div>
 
-    <!-- *** NEW: Clear All Confirmation Modal *** -->
+    <!-- Clear All Confirmation Modal -->
     <div class="modal fade" id="clearAllModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -853,7 +852,6 @@
             Timestamp, limit, documentId
         };
 
-        // *** NEW HELPER FUNCTION ***
         // Helper function to break an array into chunks
         const chunkArray = (arr, size) => {
             const chunks = [];
@@ -881,7 +879,7 @@
                 currentReturnModal: null,
                 currentQuickGiveModal: null,
                 currentResetModal: null, 
-                currentClearAllModal: null, // *** NEW ***
+                currentClearAllModal: null, 
                 appToast: null,
                 
                 // Auth & Data State
@@ -930,7 +928,7 @@
                 App.state.currentReturnModal = new bootstrap.Modal(document.getElementById('returnModal'));
                 App.state.currentQuickGiveModal = new bootstrap.Modal(document.getElementById('quickGiveModal'));
                 App.state.currentResetModal = new bootstrap.Modal(document.getElementById('resetModal'));
-                App.state.currentClearAllModal = new bootstrap.Modal(document.getElementById('clearAllModal')); // *** NEW ***
+                App.state.currentClearAllModal = new bootstrap.Modal(document.getElementById('clearAllModal')); 
                 App.state.appToast = new bootstrap.Toast(document.getElementById('appToast'));
                 App.loadTheme();
             },
@@ -988,20 +986,40 @@
                 document.getElementById('loading-overlay').style.display = 'none';
             },
 
-            // Page Navigation
+            // *** NEW: Centralized render function ***
+            renderCurrentPage: () => {
+                if (!App.state.isDataReady) return; // Don't render if not ready
+                
+                console.log(`Rerendering page: ${App.state.currentPage}`);
+                App.Dashboard.refresh(); // Always refresh stats
+
+                switch (App.state.currentPage) {
+                    case 'customers': 
+                        App.Customers.filterList(); 
+                        break;
+                    case 'batteries': 
+                        App.Batteries.filterList(); 
+                        break;
+                    case 'give-battery': 
+                        App.Give.loadCustomersForMarket(); // This is the render function for this page
+                        break;
+                    case 'return-battery': 
+                        App.Return.renderList(); 
+                        break;
+                    // Other pages (dashboard, reports, settings) don't need dynamic re-rendering
+                }
+            },
+
+            // *** UPDATED: Page Navigation ***
             navigateTo: (pageId) => {
                 if (!App.state.isAuthReady) {
-                    // Don't navigate until auth is complete
                     console.warn("navigateTo called before auth is ready. Ignoring.");
                     return;
                 }
-                if (pageId === 'dashboard' && !App.state.isDataReady) {
-                     // Allow navigation to dashboard, but skip logic
-                } else if (!App.state.isDataReady) {
+                if (pageId !== 'dashboard' && !App.state.isDataReady) {
                     console.warn("navigateTo called before data is ready. Ignoring.");
                     return;
                 }
-
 
                 App.state.currentPage = pageId;
                 // Hide all pages
@@ -1017,16 +1035,12 @@
                     link.classList.toggle('active', link.dataset.page === pageId);
                 });
 
-                // Run page-specific load logic
-                switch (pageId) {
-                    // Dashboard is updated by listeners
-                    case 'customers': App.Customers.filterList(); break;
-                    case 'batteries': App.Batteries.filterList(); break;
-                    case 'give-battery': App.Give.load(); break;
-                    // Return page is updated by listener
-                    case 'reports': App.Reports.load(); break;
-                    // Settings page is updated by listener
-                }
+                // Run page-specific "reset" logic
+                if (pageId === 'give-battery') App.Give.load(); // Resets form
+                if (pageId === 'reports') App.Reports.load(); // Resets dates
+                
+                // Render the new page with current data
+                App.renderCurrentPage(); 
             },
 
             // UI Helpers
@@ -1081,13 +1095,8 @@
                     }
                 });
 
-                // Refresh the *current* page's content (if needed)
-                switch (App.state.currentPage) {
-                    case 'dashboard': App.Dashboard.refresh(); break;
-                    case 'customers': App.Customers.filterList(); break;
-                    case 'batteries': App.Batteries.filterList(); break;
-                    case 'give-battery': App.Give.loadCustomersForMarket(); break;
-                }
+                // Refresh the *current* page's content
+                App.renderCurrentPage();
             },
 
             populateMarketSelects: () => {
@@ -1183,10 +1192,11 @@
                 
                 if (App.state.listeners.customers) App.state.listeners.customers(); // Unsubscribe old
                 
+                // *** UPDATED: Listener only updates cache and calls render***
                 App.state.listeners.customers = fb.onSnapshot(q, (snapshot) => {
                     console.log("Firestore: Customers updated");
                     App.state.localCache.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.Customers.filterList(); // Re-render the list
+                    App.renderCurrentPage(); 
                 }, (error) => {
                     console.error("Error listening to customers:", error);
                     App.showToast("Error", "Could not load customers.", "error");
@@ -1194,7 +1204,7 @@
             },
 
             filterList: () => {
-                if (App.state.currentPage !== 'customers') return; // Only render if page is active
+                // *** REMOVED: Page guard
                 
                 const searchTerm = document.getElementById('customer-search').value.toLowerCase();
                 const marketFilter = document.getElementById('customer-market-filter').value;
@@ -1219,13 +1229,19 @@
                 }
 
                 // Sort and render
-                filteredCustomers.sort((a, b) => a.name.localeCompare(b.name)).forEach(customer => {
+                filteredCustomers.sort((a, b) => a.name.localeCompare(b.name)).forEach((customer, index) => { // Added 'index'
                     listEl.innerHTML += `
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="mb-0">${customer.name}</h6>
-                                <small class="text-muted">${customer.mobile || 'No Phone'} | ${customer.market}</small><br>
-                                <small class="text-muted">${customer.address || 'No Address'}</small>
+                                <!-- NEW: Serial Number -->
+                                <h6 class="mb-0 d-inline-block text-muted" style="width: 30px; vertical-align: top;">${index + 1}.</h6>
+                                
+                                <!-- NEW: Wrapper Div for alignment -->
+                                <div class="d-inline-block" style="vertical-align: top;">
+                                    <h6 class="mb-0">${customer.name}</h6>
+                                    <small class="text-muted">${customer.mobile || 'No Phone'} | ${customer.market}</small><br>
+                                    <small class="text-muted">${customer.address || 'No Address'}</small>
+                                </div>
                             </div>
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-outline-success" title="Quick Give" onclick="App.Customers.showQuickGiveModal('${customer.id}', '${customer.name}', '${customer.market}')">
@@ -1407,11 +1423,11 @@
                 
                 if (App.state.listeners.batteries) App.state.listeners.batteries(); // Unsubscribe old
                 
+                // *** UPDATED: Listener only updates cache and calls render***
                 App.state.listeners.batteries = fb.onSnapshot(q, (snapshot) => {
                     console.log("Firestore: Batteries updated");
                     App.state.localCache.batteries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.Batteries.filterList(); // Re-render the list
-                    App.Dashboard.refresh(); // Update dashboard stats
+                    App.renderCurrentPage();
                 }, (error) => {
                     console.error("Error listening to batteries:", error);
                     App.showToast("Error", "Could not load batteries.", "error");
@@ -1419,7 +1435,7 @@
             },
 
             filterList: () => {
-                if (App.state.currentPage !== 'batteries') return; // Only render if page is active
+                // *** REMOVED: Page guard
                 
                 const searchTerm = document.getElementById('battery-search').value.toLowerCase();
                 const statusFilter = document.getElementById('battery-status-filter').value;
@@ -1577,7 +1593,7 @@
                 }
 
                 try {
-                    // Check for duplicates in chunks of 30
+                    // *** FIX: Check for duplicates in chunks of 30 (Firebase 'in' query limit) ***
                     const chunks = chunkArray(batteryNumbers, 30);
                     const existingNumbers = new Set();
                     
@@ -1596,12 +1612,17 @@
 
                     if (validBatteriesToAdd.length > 0) {
                         App.showToast("Info", `Adding ${validBatteriesToAdd.length} new batteries...`, "info");
-                        const batch = fb.writeBatch(fb.db);
-                        for (const battery of validBatteriesToAdd) {
-                            const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.batteries));
-                            batch.set(docRef, battery);
+                        
+                        // Add in batches of 400 (batch limit is 500)
+                        const addChunks = chunkArray(validBatteriesToAdd, 400);
+                        for (const addChunk of addChunks) {
+                            const batch = fb.writeBatch(fb.db);
+                            for (const battery of addChunk) {
+                                const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.batteries));
+                                batch.set(docRef, battery);
+                            }
+                            await batch.commit();
                         }
-                        await batch.commit();
                     }
                     
                     if (failedCount > 0) {
@@ -1638,8 +1659,8 @@
         // 6. GIVE BATTERY MODULE (Firebase)
         // ----------------------------------------
         App.Give = {
+            // This function resets the form when page is loaded
             load: () => {
-                // (Identical to original)
                 document.getElementById('giveBatteryForm').reset();
                 document.getElementById('give-customer-list').innerHTML = '';
                 document.getElementById('give-customer-id').value = '';
@@ -1648,23 +1669,20 @@
                 const globalMarket = App.state.globalMarketFilter;
                 document.getElementById('give-market').value = (globalMarket !== 'All') ? globalMarket : ''; 
                 document.getElementById('give-customer-search').disabled = (globalMarket === 'All');
-                if(globalMarket !== 'All') {
-                    App.Give.loadCustomersForMarket();
-                } else {
-                     document.getElementById('give-customer-list').innerHTML = '<li class="list-group-item">Select a market to see customers.</li>';
-                }
+                
+                // loadCustomersForMarket will be called by renderCurrentPage
             },
 
+            // This function renders the content based on cache
             loadCustomersForMarket: async () => {
                 const market = document.getElementById('give-market').value;
                 const customerListEl = document.getElementById('give-customer-list');
                 const customerSearchEl = document.getElementById('give-customer-search');
                 const availableBatteryListEl = document.getElementById('give-available-battery-list');
                 
-                customerListEl.innerHTML = '<li class="list-group-item">Loading...</li>';
-                customerSearchEl.value = '';
+                // Clear old selections
                 document.getElementById('give-customer-id').value = '';
-                availableBatteryListEl.innerHTML = '<small class="text-muted">Loading...</small>';
+                document.getElementById('give-battery-numbers').value = '';
 
                 if (!market) {
                     customerListEl.innerHTML = '<li class="list-group-item">Select a market to see customers.</li>';
@@ -1675,8 +1693,7 @@
 
                 customerSearchEl.disabled = false;
 
-                // --- Load Customers (one-time fetch) ---
-                // Use local cache for this, it's faster
+                // --- Load Customers from cache ---
                 const customers = App.state.localCache.customers.filter(c => c.market === market);
                 const pendingCustomerIds = new Set(
                     App.state.localCache.transactions
@@ -1691,7 +1708,8 @@
                         .sort((a, b) => a.name.localeCompare(b.name))
                         .map(c => {
                             const hasPending = pendingCustomerIds.has(c.id);
-                            const listClass = hasPending ? 'list-group-item-danger' : 'list-group-item-success';
+                            // *** THIS IS THE FIX: Shows red/green status ***
+                            const listClass = hasPending ? 'list-group-item-danger' : 'list-group-item-success'; 
                             return `
                                 <a href="#" class="list-group-item list-group-item-action ${listClass}" data-id="${c.id}" onclick="App.Give.selectCustomer(this)">
                                     <h6 class="mb-0">${c.name}</h6>
@@ -1701,11 +1719,11 @@
                         })
                         .join('');
                     customerListEl.innerHTML = customerItems;
+                    App.Give.filterCustomers(); // Apply search filter
                 }
 
-                // --- Load Available Batteries (one-time fetch) ---
+                // --- Load Available Batteries from cache ---
                 try {
-                    // Use local cache
                     const availableBatteries = App.state.localCache.batteries.filter(
                         b => b.market === market && b.status === 'Available'
                     );
@@ -1867,11 +1885,11 @@
                 
                 if (App.state.listeners.transactions) App.state.listeners.transactions(); // Unsubscribe old
                 
+                // *** UPDATED: Listener only updates cache and calls render***
                 App.state.listeners.transactions = fb.onSnapshot(q, (snapshot) => {
                     console.log("Firestore: Transactions updated");
                     App.state.localCache.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.Return.renderList(); // Re-render the return list
-                    App.Dashboard.refresh(); // Update dashboard stats
+                    App.renderCurrentPage();
                 }, (error) => {
                     console.error("Error listening to transactions:", error);
                     App.showToast("Error", "Could not load transactions.", "error");
@@ -1879,12 +1897,13 @@
             },
 
             renderList: () => {
-                if (App.state.currentPage !== 'return-battery') return; // Only render if page is active
+                // *** REMOVED: Page guard
                 
                 const listEl = document.getElementById('return-pending-list');
                 const allCustomers = App.state.localCache.customers;
                 
                 try {
+                    // *** THIS IS THE FIX: Reads from populated cache ***
                     const pendingTransactions = App.state.localCache.transactions.filter(t => t.status === 'Pending');
                     const customerIds = [...new Set(pendingTransactions.map(t => t.customerId))];
                     
