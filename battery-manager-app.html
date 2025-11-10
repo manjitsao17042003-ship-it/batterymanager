@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Battery Rental Manager</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Custom CSS -->
+    <style>
+        /* Ensures content doesn't hide behind fixed navbars */
+        body {
+            padding-top: 56px; /* Height of top navbar */
+            padding-bottom: 70px; /* Height of bottom navbar */
+            background-color: var(--bs-body-bg);
+        }
+
+        /* Page containers */
+        .page {
+            display: none; /* Hide all pages by default */
+        }
+        .page.active {
+            display: block; /* Show active page */
+        }
+
+        /* Fullscreen Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+            flex-direction: column;
+        }
+
+        /* Bottom navigation bar */
+        .bottom-nav {
+            background-color: var(--bs-body-bg);
+            border-top: 1px solid var(--bs-border-color);
+        }
+        .bottom-nav .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+        .bottom-nav .nav-link i {
+            font-size: 1.5rem;
+        }
+        .bottom-nav .nav-link.active {
+            color: var(--bs-primary);
+        }
+
+        /* Big touch-friendly buttons */
+        .btn-xxl {
+            padding: 1rem 1.5rem;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            border-radius: 0.5rem;
+        }
+
+        /* Dashboard quick links */
+        .quick-links .btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            font-size: 0.9rem;
+            white-space: normal;
+        }
+        .quick-links .btn i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Status colors */
+        .status-available {
+            color: var(--bs-primary);
+            border-color: var(--bs-primary);
+        }
+        .status-given, .status-pending {
+            color: var(--bs-danger);
+            border-color: var(--bs-danger);
+        }
+        .status-returned {
+            color: var(--bs-success);
+            border-color: var(--bs-success);
+        }
+        .badge.status-available { background-color: var(--bs-primary); }
+        .badge.status-given, .badge.status-pending { background-color: var(--bs-danger); }
+        .badge.status-returned { background-color: var(--bs-success); }
+        
+        .batt-color-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        .batt-color-default { background-color: #e0e0e0; }
+        .batt-color-green { background-color: #4caf50; }
+        .batt-color-pink { background-color: #e91e63; }
+        .batt-color-blue { background-color: #2196f3; }
+        .batt-color-red { background-color: #f44336; }
+        .batt-color-yellow { background-color: #ffeb3b; }
+        .batt-color-black { background-color: #212121; }
+
+        /* Fix for blue square on select focus */
+        .form-select:focus {
+            border-color: #ced4da;
+            box-shadow: none;
+            outline: 0;
+        }
+
+        /* Fix for blue square on buttons and links */
+        .btn:focus, a:focus, .nav-link:focus {
+            box-shadow: none !important;
+            outline: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NEW: Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner-border mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Connecting to database...</p>
+    </div>
+
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#" onclick="App.navigateTo('dashboard')">
+                <i class="bi bi-battery-charging"></i> Battery Rental Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="darkModeToggle" onclick="App.toggleDarkMode()">
+                            <i class="bi bi-moon-fill"></i> <span>Toggle Theme</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <span class="navbar-text" id="user-id-display" style="font-size: 0.7rem; margin-right: 10px;"></span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="container-fluid mt-3">
+
+        <!-- ============================================== -->
+        <!-- == PAGE: DASHBOARD                          == -->
+        <!-- ============================================== -->
+        <div id="page-dashboard" class="page active">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4">Dashboard</h2>
+                <select class="form-select w-auto" id="dashboardMarketFilter" onchange="App.updateGlobalMarket(this.value)">
+                    <!-- Markets will be populated here -->
+                </select>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="card text-center text-bg-primary h-100">
+                        <div class="card-body">
+                            <h5 class="card-title" id="stat-total">0</h5>
+                            <p class="card-text"><small>Total Batteries</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card text-center text-bg-success h-100">
+                        <div class="card-body">
+                            <h5 class="card-title" id="stat-available">0</h5>
+                            <p class="card-text"><small>Available</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card text-center text-bg-danger h-100">
+                        <div class="card-body">
+                            <h5 class="card-title" id="stat-rented">0</h5>
+                            <p class="card-text"><small>Rented Out</small></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card text-center text-bg-warning h-100">
+                        <div class="card-body">
+                            <h5 class="card-title" id="stat-pending">0</h5>
+                            <p class="card-text"><small>Pending Returns</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <h3 class="h5 mt-4">Quick Actions</h3>
+            <div class="row g-3 quick-links">
+                <div class="col-6">
+                    <button class="btn btn-lg btn-outline-primary w-100" onclick="App.navigateTo('give-battery')">
+                        <i class="bi bi-box-arrow-up"></i>
+                        Give Battery (Manual)
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button class="btn btn-lg btn-outline-success w-100" onclick="App.navigateTo('return-battery')">
+                        <i class="bi bi-box-arrow-in-down"></i>
+                        Return Battery
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-outline-secondary w-100" onclick="App.navigateTo('customers')">
+                        <i class="bi bi-people"></i>
+                        Customers
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-outline-secondary w-100" onclick="App.navigateTo('batteries')">
+                        <i class="bi bi-battery-full"></i>
+                        Batteries
+                    </button>
+                </div>
+                <div class="col-4">
+                    <button class="btn btn-outline-secondary w-100" onclick="App.navigateTo('reports')">
+                        <i class="bi bi-clipboard-data"></i>
+                        Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: GIVE BATTERY (MANUAL)              == -->
+        <!-- ============================================== -->
+        <div id="page-give-battery" class="page">
+            <h2 class="h4 mb-3">Give Battery (Manual Entry)</h2>
+            <p>This page is for assigning *specific* battery numbers to a customer.</p>
+            
+            <form id="giveBatteryForm" onsubmit="App.Give.submit(); return false;">
+                <!-- Step 1: Select Market -->
+                <div class="mb-3">
+                    <label for="give-market" class="form-label">Step 1: Select Market</label>
+                    <select class="form-select form-select-lg" id="give-market" required onchange="App.Give.loadCustomersForMarket()">
+                        <option value="">-- Select a Market --</option>
+                    </select>
+                </div>
+
+                <!-- Step 2: Select Customer (CHANGED TO LIST) -->
+                <div class="mb-3">
+                    <label for="give-customer-search" class="form-label">Step 2: Select Customer</label>
+                    <input type="text" class="form-control form-control-lg mb-2" id="give-customer-search" placeholder="Search customer name..." onkeyup="App.Give.filterCustomers()">
+                    <div id="give-customer-list" class="list-group" style="max-height: 250px; overflow-y: auto;">
+                        <!-- Customer list will be populated here -->
+                    </div>
+                    <input type="hidden" id="give-customer-id" required> <!-- This is key -->
+                </div>
+
+                <!-- *** NEW SECTION: Step 3: Select Available Batteries *** -->
+                <div class="mb-3">
+                    <label for="give-available-battery-list" class="form-label">Step 3: Select Available Batteries (Tap to add)</label>
+                    <div id="give-available-battery-list" class="p-2 rounded" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--bs-border-color);">
+                        <small class="text-muted">Select a market to see available batteries.</small>
+                    </div>
+                </div>
+
+                <!-- Step 4: Selected Batteries -->
+                <div class="mb-3">
+                    <label for="give-battery-numbers" class="form-label">Step 4: Selected Batteries</label>
+                    <textarea class="form-control form-control-lg" id="give-battery-numbers" rows="3" placeholder="Batteries will appear here when selected..." required></textarea>
+                </div>
+
+                <!-- Step 5: Finish -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-xxl">
+                        <i class="bi bi-check-circle-fill"></i> Finish & Give
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: RETURN BATTERY                     == -->
+        <!-- ============================================== -->
+        <div id="page-return-battery" class="page">
+            <h2 class="h4 mb-3">Return Battery</h2>
+            <p>Showing customers with pending battery returns.</p>
+            <input type="text" class="form-control mb-3" id="return-customer-search" placeholder="Search customers..." onkeyup="App.Return.filterCustomers()">
+            <div id="return-pending-list" class="list-group">
+                <!-- Pending customers will be populated here -->
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: CUSTOMER MANAGEMENT                == -->
+        <!-- ============================================== -->
+        <div id="page-customers" class="page">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4 mb-0">Customers</h2>
+                <button class="btn btn-primary" onclick="App.Customers.showModal()">
+                    <i class="bi bi-plus-circle"></i> Add New
+                </button>
+            </div>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="customer-search" placeholder="Search by name, phone, or address..." onkeyup="App.Customers.filterList()">
+            </div>
+            
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="customer-market-filter">Market</label>
+                <select class="form-select" id="customer-market-filter" onchange="App.updateGlobalMarket(this.value)">
+                    <option value="All">All Markets</option>
+                </select>
+            </div>
+
+            <ul class="list-group" id="customer-list">
+                <!-- Customer list will be populated here by Firestore listener -->
+            </ul>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: BATTERY MANAGEMENT                 == -->
+        <!-- ============================================== -->
+        <div id="page-batteries" class="page">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4 mb-0">Batteries</h2>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-info" onclick="App.Batteries.showRangeModal()">
+                        <i class="bi bi-plus-slash-minus"></i> Range
+                    </button>
+                    <button class="btn btn-primary" onclick="App.Batteries.showAddModal()">
+                        <i class="bi bi-plus-circle"></i> New
+                    </button>
+                </div>
+            </div>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="battery-search" placeholder="Search by battery number..." onkeyup="App.Batteries.filterList()">
+            </div>
+
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="battery-market-filter">Market</label>
+                <select class="form-select" id="battery-market-filter" onchange="App.updateGlobalMarket(this.value)">
+                    <option value="All">All Markets</option>
+                </select>
+            </div>
+
+            <div class="input-group mb-3">
+                <label class="input-group-text" for="battery-status-filter">Status</label>
+                <select class="form-select" id="battery-status-filter" onchange="App.Batteries.filterList()">
+                    <option value="All">All Statuses</option>
+                    <option value="Available">Available</option>
+                    <option value="Given">Given</option>
+                </select>
+            </div>
+
+            <ul class="list-group" id="battery-list">
+                <!-- Battery list will be populated here by Firestore listener -->
+            </ul>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: REPORTS                            == -->
+        <!-- ============================================== -->
+        <div id="page-reports" class="page">
+            <h2 class="h4 mb-3">Reports</h2>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <label for="report-market" class="form-label">Market</label>
+                    <select class="form-select" id="report-market">
+                        <option value="All">All Markets</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="report-date-start" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="report-date-start">
+                </div>
+                <div class="col-md-4">
+                    <label for="report-date-end" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="report-date-end">
+                </div>
+            </div>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-3">
+                <button class="btn btn-primary" onclick="App.Reports.generate()">
+                    <i class="bi bi-funnel"></i> Generate Report
+                </button>
+                <button class="btn btn-success" onclick="App.Reports.export('csv')">
+                    <i class="bi bi-filetype-csv"></i> Export as CSV
+                </button>
+                <button class="btn btn-success" onclick="App.Reports.export('xlsx')">
+                    <i class="bi bi-filetype-xlsx"></i> Export as Excel
+                </button>
+            </div>
+
+            <div id="report-summary" class="mb-3">
+                <!-- Report summary totals go here -->
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Market</th>
+                            <th>Customer</th>
+                            <th>Battery #</th>
+                            <th>Status</th>
+                            <th>Date Returned</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-results">
+                        <!-- Report data goes here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- == PAGE: SETTINGS                           == -->
+        <!-- ============================================== -->
+        <div id="page-settings" class="page">
+            <h2 class="h4 mb-3">Settings</h2>
+
+            <!-- Market Management -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Manage Markets</h5>
+                    <p class="card-text">Add or remove markets. (e.g., Sunday, Wednesday, Friday)</p>
+                    <div class="mb-2">
+                        <label for="settings-market-list" class="form-label">Markets (comma-separated)</label>
+                        <textarea class="form-control" id="settings-market-list" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="App.Settings.saveMarkets()">Save Markets</button>
+                </div>
+            </div>
+            
+            <!-- Backup & Restore (REMOVED for Firebase) -->
+
+            <!-- Danger Zone -->
+            <div class="card text-bg-danger mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Danger Zone</h5>
+                    <p class="card-text">Perform irreversible actions.</p>
+                    <button class="btn btn-danger me-2" onclick="App.Settings.showResetModal()">
+                        <i class="bi bi-calendar-x"></i> Reset Daily Transactions
+                    </button>
+                    <!-- Clear All Batteries removed as it's too dangerous in multi-user setup -->
+                    <small class="d-block text-white-50 mt-1">Reset Daily: Clears transactions and marks all batteries as 'Available'.</small>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- == BOTTOM NAVIGATION                          == -->
+    <!-- ============================================== -->
+    <nav class="navbar fixed-bottom navbar-light bottom-nav nav-pills nav-fill">
+        <a class="nav-link active" href="#" data-page="dashboard" onclick="App.navigateTo('dashboard')">
+            <i class="bi bi-house-door"></i>
+            <span>Dashboard</span>
+        </a>
+        <a class="nav-link" href="#" data-page="give-battery" onclick="App.navigateTo('give-battery')">
+            <i class="bi bi-box-arrow-up"></i>
+            <span>Give (Manual)</span> <!-- CHANGED Label -->
+        </a>
+        <a class="nav-link" href="#" data-page="return-battery" onclick="App.navigateTo('return-battery')">
+            <i class="bi bi-box-arrow-in-down"></i>
+            <span>Return</span>
+        </a>
+        <a class="nav-link" href="#" data-page="customers" onclick="App.navigateTo('customers')">
+            <i class="bi bi-people"></i>
+            <span>Customers</span>
+        </a>
+        <a class="nav-link" href="#" data-page="settings" onclick="App.navigateTo('settings')">
+            <i class="bi bi-gear"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+
+    <!-- ============================================== -->
+    <!-- == MODALS                                   == -->
+    <!-- ============================================== -->
+
+    <!-- Customer Add/Edit Modal -->
+    <div class="modal fade" id="customerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="customerForm" onsubmit="App.Customers.save(); return false;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="customerModalTitle">Add Customer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="customer-id">
+                        <div class="mb-3">
+                            <label for="customer-market" class="form-label">Market</label>
+                            <select class="form-select" id="customer-market" required>
+                                <!-- Market options -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer-name" class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="customer-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer-mobile" class="form-label">Mobile Number</label>
+                            <input type="tel" class="form-control" id="customer-mobile" pattern="[0-9]{10}">
+                            <div class="invalid-feedback">If provided, please enter a 10-digit mobile number.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customer-address" class="form-label">Address / Area / Shop Name</label>
+                            <input type="text" class="form-control" id="customer-address">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Customer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Battery Add/Edit Modal -->
+    <div class="modal fade" id="batteryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="batteryForm" onsubmit="App.Batteries.save(); return false;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="batteryModalTitle">Add Battery</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="battery-id">
+                        <div class="mb-3">
+                            <label for="battery-number" class="form-label">Battery Serial Number</label>
+                            <input type="text" class="form-control" id="battery-number" required>
+                            <div class="invalid-feedback" id="battery-number-error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="battery-market" class="form-label">Market</label>
+                            <select class="form-select" id="battery-market" required>
+                                <!-- Market options -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="battery-color" class="form-label">Battery Color</label>
+                            <select class="form-select" id="battery-color">
+                                <option value="default">Default (Grey)</option>
+                                <option value="green">Green</option>
+                                <option value="pink">Pink</option>
+                                <option value="blue">Blue</option>
+                                <option value="red">Red</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="black">Black</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Battery</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Battery Range Add Modal -->
+    <div class="modal fade" id="batteryRangeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="batteryRangeForm" onsubmit="App.Batteries.saveRange(); return false;">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Batteries from Range</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="battery-range-prefix" class="form-label">Prefix (Optional)</label>
+                            <input type="text" class="form-control" id="battery-range-prefix" placeholder="e.g., A-">
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="battery-range-start" class="form-label">Start Number</label>
+                                <input type="number" class="form-control" id="battery-range-start" required min="1" value="1">
+                            </div>
+                            <div class="col">
+                                <label for="battery-range-end" class="form-label">End Number</label>
+                                <input type="number" class="form-control" id="battery-range-end" required min="1" value="200">
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="battery-range-market" class="form-label">Market</label>
+                            <select class="form-select" id="battery-range-market" required>
+                                <!-- Market options -->
+                            </select>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="battery-range-color" class="form-label">Battery Color</label>
+                            <select class="form-select" id="battery-range-color">
+                                <option value="default">Default (Grey)</option>
+                                <option value="green">Green</option>
+                                <option value="pink">Pink</option>
+                                <option value="blue">Blue</option>
+                                <option value="red">Red</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="black">Black</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Add Batteries</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Battery Return Modal -->
+    <div class="modal fade" id="returnModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="returnModalTitle">Return Batteries</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tap a battery to mark it as "Returned".</p>
+                    <ul class="list-group" id="return-battery-list">
+                        <!-- Batteries to return -->
+                    </ul>
+                </div>
+                <div class="modal-footer justify-content-start" id="return-notify-footer" style="display: none;">
+                    <a href="#" id="return-whatsapp-link" target="_blank" class="btn btn-success">
+                        <i class="bi bi-whatsapp"></i> Notify Customer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Give Modal -->
+    <div class="modal fade" id="quickGiveModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="quickGiveForm" onsubmit="App.Customers.submitQuickGive(); return false;">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="quickGiveModalTitle">Quick Give</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="quick-give-customer-id">
+                        <input type="hidden" id="quick-give-customer-market">
+                        <p id="quick-give-customer-name-display" class="fw-bold"></p>
+                        
+                        <div class="mb-3">
+                            <label for="quick-give-battery-count" class="form-label">Number of batteries to give:</label>
+                            <input type="number" class="form-control form-control-lg" id="quick-give-battery-count" required min="1" value="1">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle-fill"></i> Confirm Give
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Reset Confirmation Modal -->
+    <div class="modal fade" id="resetModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirm Action</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to reset all daily data? This will:</p>
+                    <ul class="list-group">
+                        <li class="list-group-item list-group-item-danger">Delete ALL transaction records.</li>
+                        <li class="list-group-item list-group-item-danger">Mark ALL 'Given' batteries as 'Available'.</li>
+                    </ul>
+                    <p class="mt-3"><strong>This action cannot be undone.</strong></p>
+                    <div class="mb-3">
+                        <label for="reset-confirm-text" class="form-label">Type "RESET" to confirm:</label>
+                        <input type="text" class="form-control" id="reset-confirm-text" placeholder="RESET">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirm-reset-btn" onclick="App.Settings.confirmResetDailyData()">Reset Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- == TOAST CONTAINER                          == -->
+    <!-- ============================================== -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div id="appToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto" id="toastTitle">Success</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastBody">
+                Action completed successfully.
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- == JAVASCRIPT LIBRARIES                     == -->
+    <!-- ============================================== -->
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- REMOVED Dexie.js -->
+    
+    <!-- SheetJS (Excel Export) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <!-- NEW: Firebase SDKs -->
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithCustomToken, 
+            signInAnonymously, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            addDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc, 
+            onSnapshot, 
+            collection, 
+            query, 
+            where, 
+            getDocs,
+            writeBatch,
+            serverTimestamp,
+            Timestamp,
+            limit,
+            documentId,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ----------------------------------------
+        // 1. FIREBASE SETUP
+        // ----------------------------------------
+        
+        // Use provided config variables
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config)
+            : {
+                apiKey: "AIzaSyA-5Z_HVVwHn14czFkt14__srZ4U14ypXw",
+                authDomain: "rental1-7718e.firebaseapp.com",
+                projectId: "rental1-7718e",
+                storageBucket: "rental1-7718e.firebasestorage.app",
+                messagingSenderId: "280685899242",
+                appId: "1:280685899242:web:d49d07717fac7989e21693"
+              };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Enable Firestore debug logging
+        setLogLevel('debug');
+
+        // Make Firestore functions globally available to our App object
+        window.fb = {
+            db,
+            doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot,
+            collection, query, where, getDocs, writeBatch, serverTimestamp,
+            Timestamp, limit, documentId
+        };
+        
+        // ----------------------------------------
+        // 2. MAIN APP CONTROLLER (Firebase-enabled)
+        // ----------------------------------------
+        const App = {
+            
+            // App state
+            state: {
+                markets: ['Sunday', 'Wednesday', 'Friday', 'Unassigned'],
+                globalMarketFilter: 'All',
+                currentPage: 'dashboard',
+                
+                // Modal instances
+                currentCustomerModal: null,
+                currentBatteryModal: null,
+                currentBatteryRangeModal: null,
+                currentReturnModal: null,
+                currentQuickGiveModal: null,
+                currentResetModal: null, // NEW
+                appToast: null,
+                
+                // Auth & Data State
+                userId: null,
+                isAuthReady: false,
+                isDataReady: false,
+                
+                // Firestore Listeners (to unsubscribe later)
+                listeners: {
+                    customers: null,
+                    batteries: null,
+                    transactions: null,
+                    settings: null
+                },
+                
+                // Local Caches (for filtering)
+                localCache: {
+                    customers: [],
+                    batteries: [],
+                    transactions: []
+                },
+                
+                // Firestore Paths
+                dbPaths: {
+                    customers: `artifacts/${appId}/public/data/customers`,
+                    batteries: `artifacts/${appId}/public/data/batteries`,
+                    transactions: `artifacts/${appId}/public/data/transactions`,
+                    settings: `artifacts/${appId}/public/data/settings`
+                }
+            },
+
+            // App Initialization
+            init: () => {
+                // This starts the app
+                document.addEventListener('DOMContentLoaded', () => {
+                    App.initBootstrap();
+                    App.initAuth();
+                });
+            },
+
+            initBootstrap: () => {
+                // Initialize all Bootstrap components
+                App.state.currentCustomerModal = new bootstrap.Modal(document.getElementById('customerModal'));
+                App.state.currentBatteryModal = new bootstrap.Modal(document.getElementById('batteryModal'));
+                App.state.currentBatteryRangeModal = new bootstrap.Modal(document.getElementById('batteryRangeModal'));
+                App.state.currentReturnModal = new bootstrap.Modal(document.getElementById('returnModal'));
+                App.state.currentQuickGiveModal = new bootstrap.Modal(document.getElementById('quickGiveModal'));
+                App.state.currentResetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+                App.state.appToast = new bootstrap.Toast(document.getElementById('appToast'));
+                App.loadTheme();
+            },
+
+            initAuth: () => {
+                // Listen for authentication state changes
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // User is signed in
+                        App.state.userId = user.uid;
+                        App.state.isAuthReady = true;
+                        document.getElementById('user-id-display').textContent = `User: ${user.uid.substring(0, 6)}`;
+                        console.log("User authenticated:", App.state.userId);
+                        
+                        // Auth is ready, now load app logic and data
+                        App.initAppLogic();
+                        
+                    } else if (App.state.isAuthReady === false) {
+                        // No user, attempt to sign in
+                        App.state.isAuthReady = "pending"; // Prevent re-entry
+                        console.log("No user, attempting sign-in...");
+                        try {
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                console.log("Signing in with custom token...");
+                                await signInWithCustomToken(auth, __initial_auth_token);
+                            } else {
+                                console.log("Signing in anonymously...");
+                                await signInAnonymously(auth);
+                            }
+                            // onAuthStateChanged will run again with the new user
+                        } catch (error) {
+                            console.error("Firebase Auth Error:", error);
+                            document.getElementById('loading-overlay').innerHTML = `<p class="text-danger">Authentication Failed. Please refresh.</p>`;
+                        }
+                    }
+                });
+            },
+            
+            initAppLogic: () => {
+                console.log("Initializing app logic and data listeners...");
+                // Load global market filter *first*
+                App.state.globalMarketFilter = localStorage.getItem('battery-manager-market') || 'All';
+
+                // Load settings, then init all real-time listeners
+                App.Settings.loadAndListen();
+                App.Customers.listenForUpdates();
+                App.Batteries.listenForUpdates();
+                App.Return.listenForUpdates(); // This listener also populates dashboard stats
+
+                // Set initial page
+                App.navigateTo('dashboard');
+                
+                // We can hide the loader now. Data will stream in.
+                App.state.isDataReady = true;
+                document.getElementById('loading-overlay').style.display = 'none';
+            },
+
+            // Page Navigation
+            navigateTo: (pageId) => {
+                if (!App.state.isAuthReady || !App.state.isDataReady) {
+                    console.warn("navigateTo called before auth/data is ready. Ignoring.");
+                    return;
+                }
+
+                App.state.currentPage = pageId;
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                // Show target page
+                const pageEl = document.getElementById(`page-${pageId}`);
+                if (pageEl) {
+                    pageEl.classList.add('active');
+                }
+                
+                // Update bottom nav active state
+                document.querySelectorAll('.bottom-nav .nav-link').forEach(link => {
+                    link.classList.toggle('active', link.dataset.page === pageId);
+                });
+
+                // Run page-specific load logic
+                switch (pageId) {
+                    // Dashboard is updated by listeners
+                    case 'customers': App.Customers.filterList(); break;
+                    case 'batteries': App.Batteries.filterList(); break;
+                    case 'give-battery': App.Give.load(); break;
+                    // Return page is updated by listener
+                    case 'reports': App.Reports.load(); break;
+                    // Settings page is updated by listener
+                }
+            },
+
+            // UI Helpers
+            showToast: (title, message, type = 'success') => {
+                // (Identical to original, no changes needed)
+                const toastInstance = App.state.appToast;
+                const toastEl = document.getElementById('appToast');
+                if (!toastInstance || !toastEl) {
+                    console.error("Toast component not initialized.");
+                    return;
+                }
+                const toastHeader = toastEl.querySelector('.toast-header');
+                const toastTitle = toastEl.querySelector('#toastTitle');
+                const toastBody = toastEl.querySelector('#toastBody');
+                const toastIcon = toastHeader.querySelector('i');
+                if (!toastHeader || !toastTitle || !toastBody || !toastIcon) {
+                    console.error("Toast HTML structure is incorrect.");
+                    return;
+                }
+                toastHeader.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning');
+                toastIcon.className = '';
+                if (type === 'success') {
+                    toastHeader.classList.add('text-bg-success');
+                    toastIcon.className = 'bi bi-check-circle-fill me-2';
+                } else if (type === 'error') {
+                    toastHeader.classList.add('text-bg-danger');
+                    toastIcon.className = 'bi bi-exclamation-triangle-fill me-2';
+                } else {
+                    toastHeader.classList.add('text-bg-warning');
+                    toastIcon.className = 'bi bi-info-circle-fill me-2';
+                }
+                toastTitle.textContent = title;
+                toastBody.textContent = message;
+                toastInstance.show();
+            },
+
+            updateGlobalMarket: (market) => {
+                App.state.globalMarketFilter = market;
+                localStorage.setItem('battery-manager-market', market);
+
+                // Update all other selects
+                const selects = document.querySelectorAll('select[id*="-market"], select[id*="MarketFilter"]');
+                selects.forEach(select => {
+                    if (Array.from(select.options).some(opt => opt.value === market)) {
+                        select.value = market;
+                    } else {
+                        if (select.id.includes('Filter') || select.id.includes('report')) {
+                            select.value = 'All';
+                        } else {
+                            select.value = '';
+                        }
+                    }
+                });
+
+                // Refresh the *current* page's content (if needed)
+                switch (App.state.currentPage) {
+                    case 'dashboard': App.Dashboard.refresh(); break;
+                    case 'customers': App.Customers.filterList(); break;
+                    case 'batteries': App.Batteries.filterList(); break;
+                    case 'give-battery': App.Give.loadCustomersForMarket(); break;
+                }
+            },
+
+            populateMarketSelects: () => {
+                // (Identical to original, no changes needed)
+                const selects = document.querySelectorAll('select[id*="-market"], select[id*="MarketFilter"]');
+                const globalMarket = App.state.globalMarketFilter;
+                selects.forEach(select => {
+                    let currentVal = select.value; // Preserve current value if possible
+                    let options = '';
+                    if (select.id.includes('Filter') || select.id.includes('report')) {
+                        options += '<option value="All">All Markets</option>';
+                    }
+                    if (select.id.includes('give') || select.id === 'battery-market' || select.id === 'battery-range-market' || select.id === 'customer-market') {
+                        options += '<option value="">-- Select a Market --</option>';
+                    }
+                    App.state.markets.forEach(market => {
+                        options += `<option value="${market}">${market}</option>`;
+                    });
+                    select.innerHTML = options;
+
+                    // Restore value
+                    if (Array.from(select.options).some(opt => opt.value === currentVal)) {
+                         select.value = currentVal;
+                    } else if (Array.from(select.options).some(opt => opt.value === globalMarket)) {
+                        select.value = globalMarket;
+                    } else {
+                        if (select.id.includes('Filter') || select.id.includes('report')) {
+                            select.value = 'All';
+                        } else {
+                            select.value = '';
+                        }
+                    }
+                });
+            },
+
+            toggleDarkMode: () => {
+                // (Identical to original, no changes needed)
+                const html = document.documentElement;
+                const currentTheme = html.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('battery-manager-theme', newTheme);
+            },
+
+            loadTheme: () => {
+                // (Identical to original, no changes needed)
+                const savedTheme = localStorage.getItem('battery-manager-theme');
+                if (savedTheme) {
+                    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 3. DASHBOARD MODULE (Firebase)
+        // ----------------------------------------
+        App.Dashboard = {
+            // This is now triggered by listeners in Batteries and Transactions
+            refresh: () => {
+                const market = document.getElementById('dashboardMarketFilter').value;
+                const marketFilter = market === 'All' ? null : market;
+
+                try {
+                    const allBatteries = App.state.localCache.batteries;
+                    const allTransactions = App.state.localCache.transactions;
+
+                    const batteries = marketFilter ? allBatteries.filter(b => b.market === marketFilter) : allBatteries;
+                    const transactions = marketFilter ? allTransactions.filter(t => t.market === marketFilter) : allTransactions;
+
+                    const total = batteries.length;
+                    const available = batteries.filter(b => b.status === 'Available').length;
+                    const rented = batteries.filter(b => b.status === 'Given').length;
+                    const pending = transactions.filter(t => t.status === 'Pending').length;
+                    
+                    document.getElementById('stat-total').textContent = total;
+                    document.getElementById('stat-available').textContent = available;
+                    document.getElementById('stat-rented').textContent = rented;
+                    document.getElementById('stat-pending').textContent = pending;
+                } catch (error) {
+                    console.error("Error refreshing dashboard:", error);
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 4. CUSTOMER MODULE (Firebase)
+        // ----------------------------------------
+        App.Customers = {
+            listenForUpdates: () => {
+                const q = fb.query(fb.collection(fb.db, App.state.dbPaths.customers), fb.where('isActive', '==', 1));
+                
+                if (App.state.listeners.customers) App.state.listeners.customers(); // Unsubscribe old
+                
+                App.state.listeners.customers = fb.onSnapshot(q, (snapshot) => {
+                    console.log("Firestore: Customers updated");
+                    App.state.localCache.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.Customers.filterList(); // Re-render the list
+                }, (error) => {
+                    console.error("Error listening to customers:", error);
+                    App.showToast("Error", "Could not load customers.", "error");
+                });
+            },
+
+            filterList: () => {
+                const searchTerm = document.getElementById('customer-search').value.toLowerCase();
+                const marketFilter = document.getElementById('customer-market-filter').value;
+                
+                const customers = App.state.localCache.customers;
+
+                const filteredCustomers = customers.filter(c => {
+                    const inMarket = (marketFilter === 'All' || c.market === marketFilter);
+                    const inSearch = (
+                        c.name.toLowerCase().includes(searchTerm) ||
+                        (c.mobile && c.mobile.includes(searchTerm)) ||
+                        (c.address && c.address.toLowerCase().includes(searchTerm))
+                    );
+                    return inMarket && inSearch;
+                });
+
+                const listEl = document.getElementById('customer-list');
+                listEl.innerHTML = '';
+                if (filteredCustomers.length === 0) {
+                    listEl.innerHTML = '<li class="list-group-item">No customers found.</li>';
+                    return;
+                }
+
+                // Sort and render
+                filteredCustomers.sort((a, b) => a.name.localeCompare(b.name)).forEach(customer => {
+                    listEl.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">${customer.name}</h6>
+                                <small class="text-muted">${customer.mobile || 'No Phone'} | ${customer.market}</small><br>
+                                <small class="text-muted">${customer.address || 'No Address'}</small>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-success" title="Quick Give" onclick="App.Customers.showQuickGiveModal('${customer.id}', '${customer.name}', '${customer.market}')">
+                                    <i class="bi bi-lightning-fill"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="App.Customers.showModal('${customer.id}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="App.Customers.delete('${customer.id}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </li>
+                    `;
+                });
+            },
+
+            showModal: async (id = null) => {
+                const form = document.getElementById('customerForm');
+                form.reset();
+                form.classList.remove('was-validated');
+                document.getElementById('customer-id').value = '';
+                
+                if (id) {
+                    // Edit mode
+                    document.getElementById('customerModalTitle').textContent = 'Edit Customer';
+                    const customer = App.state.localCache.customers.find(c => c.id === id);
+                    if(customer) {
+                        document.getElementById('customer-id').value = customer.id;
+                        document.getElementById('customer-market').value = customer.market;
+                        document.getElementById('customer-name').value = customer.name;
+                        document.getElementById('customer-mobile').value = customer.mobile;
+                        document.getElementById('customer-address').value = customer.address;
+                    }
+                } else {
+                    // Add mode
+                    document.getElementById('customerModalTitle').textContent = 'Add Customer';
+                    const globalMarket = App.state.globalMarketFilter;
+                    if (globalMarket !== 'All') {
+                        document.getElementById('customer-market').value = globalMarket;
+                    }
+                }
+                App.state.currentCustomerModal.show();
+            },
+
+            save: async () => {
+                const form = document.getElementById('customerForm');
+                if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                const id = document.getElementById('customer-id').value;
+                const customerData = {
+                    market: document.getElementById('customer-market').value,
+                    name: document.getElementById('customer-name').value,
+                    mobile: document.getElementById('customer-mobile').value,
+                    address: document.getElementById('customer-address').value,
+                    isActive: 1 // Always active on save
+                };
+
+                try {
+                    if (id) {
+                        // Update
+                        const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
+                        await fb.updateDoc(docRef, customerData);
+                        App.showToast("Success", "Customer updated successfully.");
+                    } else {
+                        // Create
+                        const collRef = fb.collection(fb.db, App.state.dbPaths.customers);
+                        await fb.addDoc(collRef, customerData);
+                        App.showToast("Success", "Customer added successfully.");
+                    }
+                    App.state.currentCustomerModal.hide();
+                    // No loadList() needed, listener will update UI
+                } catch (error) {
+                    console.error("Error saving customer:", error);
+                    App.showToast("Error", "Failed to save customer.", "error");
+                }
+            },
+
+            delete: async (id) => {
+                // Soft delete
+                try {
+                    const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
+                    await fb.updateDoc(docRef, { isActive: 0 });
+                    App.showToast("Success", "Customer marked as inactive.");
+                    // Listener will update UI
+                } catch (error) {
+                    App.showToast("Error", "Could not delete customer.", "error");
+                }
+            },
+
+            showQuickGiveModal: (id, name, market) => {
+                // (Identical to original, no changes needed)
+                const form = document.getElementById('quickGiveForm');
+                form.reset();
+                form.classList.remove('was-validated');
+                document.getElementById('quick-give-customer-id').value = id;
+                document.getElementById('quick-give-customer-market').value = market;
+                document.getElementById('quickGiveModalTitle').textContent = `Quick Give`;
+                document.getElementById('quick-give-customer-name-display').textContent = `Customer: ${name} (Market: ${market})`;
+                document.getElementById('quick-give-battery-count').value = 1;
+                App.state.currentQuickGiveModal.show();
+            },
+
+            submitQuickGive: async () => {
+                const form = document.getElementById('quickGiveForm');
+                 if (!form.checkValidity()) {
+                    form.classList.add('was-validated');
+                    return;
+                }
+
+                const customerId = document.getElementById('quick-give-customer-id').value; // ID is string
+                const market = document.getElementById('quick-give-customer-market').value;
+                const count = parseInt(document.getElementById('quick-give-battery-count').value);
+
+                if (!customerId || !market || !count || count <= 0) {
+                    App.showToast("Error", "Invalid data. Please try again.", "error");
+                    return;
+                }
+
+                try {
+                    // 1. Find available batteries in this market
+                    const q = fb.query(
+                        fb.collection(fb.db, App.state.dbPaths.batteries),
+                        fb.where('market', '==', market),
+                        fb.where('status', '==', 'Available'),
+                        fb.limit(count)
+                    );
+                    const snapshot = await fb.getDocs(q);
+
+                    // 2. Check if we found enough
+                    if (snapshot.docs.length < count) {
+                        App.showToast("Error", `Only ${snapshot.docs.length} batteries are available in ${market}.`, "error");
+                        return;
+                    }
+
+                    // 3. Process the transaction using a batch
+                    const batch = fb.writeBatch(fb.db);
+                    
+                    for (const batteryDoc of snapshot.docs) {
+                        const battery = batteryDoc.data();
+                        
+                        // 1. Create transaction record
+                        const transRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.transactions));
+                        batch.set(transRef, {
+                            customerId: customerId,
+                            batteryNumber: battery.batteryNumber,
+                            market: market,
+                            dateGiven: fb.serverTimestamp(), // Use server timestamp
+                            dateReturned: null,
+                            status: 'Pending'
+                        });
+
+                        // 2. Update battery status
+                        batch.update(batteryDoc.ref, { status: 'Given' });
+                    }
+                    
+                    await batch.commit();
+
+                    App.state.currentQuickGiveModal.hide();
+                    App.showToast("Success", `${count} batteries given to customer.`);
+                    // Listeners will update dashboard and other pages
+
+                } catch (error) {
+                    console.error("Error during Quick Give:", error);
+                    App.showToast("Error", "Transaction failed. Please try again.", "error");
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 5. BATTERY MODULE (Firebase)
+        // ----------------------------------------
+        App.Batteries = {
+            listenForUpdates: () => {
+                const q = fb.collection(fb.db, App.state.dbPaths.batteries);
+                
+                if (App.state.listeners.batteries) App.state.listeners.batteries(); // Unsubscribe old
+                
+                App.state.listeners.batteries = fb.onSnapshot(q, (snapshot) => {
+                    console.log("Firestore: Batteries updated");
+                    App.state.localCache.batteries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.Batteries.filterList(); // Re-render the list
+                    App.Dashboard.refresh(); // Update dashboard stats
+                }, (error) => {
+                    console.error("Error listening to batteries:", error);
+                    App.showToast("Error", "Could not load batteries.", "error");
+                });
+            },
+
+            filterList: () => {
+                const searchTerm = document.getElementById('battery-search').value.toLowerCase();
+                const statusFilter = document.getElementById('battery-status-filter').value;
+                const marketFilter = document.getElementById('battery-market-filter').value;
+                
+                const batteries = App.state.localCache.batteries;
+
+                const filteredBatteries = batteries.filter(b => {
+                    const inStatus = (statusFilter === 'All' || b.status === statusFilter);
+                    const inMarket = (marketFilter === 'All' || b.market === marketFilter);
+                    const inSearch = b.batteryNumber.toLowerCase().includes(searchTerm);
+                    return inStatus && inMarket && inSearch;
+                });
+
+                const listEl = document.getElementById('battery-list');
+                listEl.innerHTML = '';
+                if (filteredBatteries.length === 0) {
+                    listEl.innerHTML = '<li class="list-group-item">No batteries found.</li>';
+                    return;
+                }
+
+                // Sort and render
+                filteredBatteries.sort((a, b) => a.batteryNumber.localeCompare(b.batteryNumber, undefined, { numeric: true })).forEach(battery => {
+                    const statusClass = battery.status === 'Available' ? 'status-available' : 'status-given';
+                    const statusText = battery.status;
+                    const colorClass = battery.color || 'default';
+                    listEl.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="batt-color-dot batt-color-${colorClass}"></span>
+                                <h6 class="mb-0 d-inline-block">${battery.batteryNumber}</h6>
+                                <small class="text-muted d-block">${battery.market || 'Unassigned'}</small>
+                            </div>
+                            <div>
+                                <span class="badge rounded-pill me-3 status-${statusClass.replace('status-', '')}">${statusText}</span>
+                                <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="App.Batteries.delete('${battery.id}', '${battery.status}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </li>
+                    `;
+                });
+            },
+
+            showAddModal: () => {
+                // (Identical to original, except for market filter logic)
+                const form = document.getElementById('batteryForm');
+                form.reset();
+                document.getElementById('battery-id').value = '';
+                document.getElementById('battery-number').disabled = false;
+                document.getElementById('batteryModalTitle').textContent = 'Add Battery';
+                document.getElementById('battery-number').classList.remove('is-invalid');
+                document.getElementById('battery-number-error').textContent = '';
+                const globalMarket = App.state.globalMarketFilter;
+                if (globalMarket !== 'All') {
+                    document.getElementById('battery-market').value = globalMarket;
+                }
+                App.state.currentBatteryModal.show();
+            },
+
+            save: async () => {
+                const form = document.getElementById('batteryForm');
+                const numberInput = document.getElementById('battery-number');
+                const numberError = document.getElementById('battery-number-error');
+                
+                if (!form.checkValidity()) return;
+
+                const batteryNumber = numberInput.value.trim();
+                const batteryColor = document.getElementById('battery-color').value;
+                const id = document.getElementById('battery-id').value; // Not used for add/edit, but good to have
+                const batteryMarket = document.getElementById('battery-market').value;
+
+                if (!batteryMarket) {
+                    App.showToast("Error", "Please select a market for the battery.", "error");
+                    return;
+                }
+
+                try {
+                    // Check for duplicates
+                    const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', '==', batteryNumber));
+                    const snapshot = await fb.getDocs(q);
+                    
+                    if (!snapshot.empty) {
+                        numberInput.classList.add('is-invalid');
+                        numberError.textContent = 'This battery number already exists.';
+                        return;
+                    }
+                    
+                    numberInput.classList.remove('is-invalid');
+                    numberError.textContent = '';
+                    
+                    // Add new battery
+                    await fb.addDoc(fb.collection(fb.db, App.state.dbPaths.batteries), {
+                        batteryNumber: batteryNumber,
+                        status: 'Available',
+                        color: batteryColor,
+                        market: batteryMarket
+                    });
+                    
+                    App.showToast("Success", `Battery ${batteryNumber} added.`);
+                    App.state.currentBatteryModal.hide();
+                    // Listener will update UI and dashboard
+                } catch (error) {
+                    console.error("Error saving battery:", error);
+                    App.showToast("Error", "Could not save battery.", "error");
+                }
+            },
+
+            showRangeModal: () => {
+                // (Identical to original, except for market filter logic)
+                document.getElementById('batteryRangeForm').reset();
+                const globalMarket = App.state.globalMarketFilter;
+                if (globalMarket !== 'All') {
+                    document.getElementById('battery-range-market').value = globalMarket;
+                }
+                App.state.currentBatteryRangeModal.show();
+            },
+
+            saveRange: async () => {
+                const prefix = document.getElementById('battery-range-prefix').value.trim();
+                const start = parseInt(document.getElementById('battery-range-start').value);
+                const end = parseInt(document.getElementById('battery-range-end').value);
+                const color = document.getElementById('battery-range-color').value;
+                const market = document.getElementById('battery-range-market').value;
+
+                if (!market) {
+                    App.showToast("Error", "Please select a market.", "error");
+                    return;
+                }
+                if (!start || !end || start <= 0 || end <= 0 || end < start) {
+                    App.showToast("Error", "Invalid start/end numbers.", "error");
+                    return;
+                }
+                const totalToAdd = (end - start + 1);
+                if (totalToAdd > 400) { // Firestore batch limit is 500
+                    App.showToast("Error", "Cannot add more than 400 batteries at a time.", "error");
+                    return;
+                }
+
+                App.showToast("Info", `Adding ${totalToAdd} batteries. Please wait...`, "info");
+                App.state.currentBatteryRangeModal.hide();
+
+                const batteriesToAdd = [];
+                const batteryNumbers = [];
+                for (let i = start; i <= end; i++) {
+                    const batteryNumber = `${prefix}${i}`;
+                    batteryNumbers.push(batteryNumber);
+                    batteriesToAdd.push({
+                        batteryNumber: batteryNumber,
+                        status: 'Available',
+                        color: color,
+                        market: market
+                    });
+                }
+
+                try {
+                    // Check for duplicates first
+                    const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', 'in', batteryNumbers));
+                    const snapshot = await fb.getDocs(q);
+                    const existingNumbers = new Set(snapshot.docs.map(doc => doc.data().batteryNumber));
+
+                    const validBatteriesToAdd = batteriesToAdd.filter(b => !existingNumbers.has(b.batteryNumber));
+                    const failedCount = batteriesToAdd.length - validBatteriesToAdd.length;
+
+                    if (validBatteriesToAdd.length > 0) {
+                        const batch = fb.writeBatch(fb.db);
+                        for (const battery of validBatteriesToAdd) {
+                            const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.batteries));
+                            batch.set(docRef, battery);
+                        }
+                        await batch.commit();
+                    }
+                    
+                    if (failedCount > 0) {
+                        App.showToast("Warning", `Added ${validBatteriesToAdd.length} batteries. ${failedCount} failed (duplicates).`, "info");
+                    } else {
+                        App.showToast("Success", `Added ${validBatteriesToAdd.length} batteries.`);
+                    }
+                    
+                    // Listeners will update UI
+                } catch (e) {
+                    App.showToast("Error", "An error occurred during bulk add.", "error");
+                    console.error(e);
+                }
+            },
+
+            delete: async (id, status) => {
+                try {
+                    if (status === 'Given') {
+                        App.showToast("Error", "Cannot delete a battery that is currently 'Given'.", "error");
+                        return;
+                    }
+                    
+                    await fb.deleteDoc(fb.doc(fb.db, App.state.dbPaths.batteries, id));
+                    App.showToast("Success", "Battery deleted.");
+                    // Listener will update UI
+                } catch (error) {
+                    App.showToast("Error", "Could not delete battery.", "error");
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 6. GIVE BATTERY MODULE (Firebase)
+        // ----------------------------------------
+        App.Give = {
+            load: () => {
+                // (Identical to original)
+                document.getElementById('giveBatteryForm').reset();
+                document.getElementById('give-customer-list').innerHTML = '';
+                document.getElementById('give-customer-id').value = '';
+                document.getElementById('give-available-battery-list').innerHTML = '<small class="text-muted">Select a market to see available batteries.</small>';
+                App.populateMarketSelects();
+                const globalMarket = App.state.globalMarketFilter;
+                document.getElementById('give-market').value = (globalMarket !== 'All') ? globalMarket : ''; 
+                document.getElementById('give-customer-search').disabled = (globalMarket === 'All');
+                if(globalMarket !== 'All') {
+                    App.Give.loadCustomersForMarket();
+                } else {
+                     document.getElementById('give-customer-list').innerHTML = '<li class="list-group-item">Select a market to see customers.</li>';
+                }
+            },
+
+            loadCustomersForMarket: async () => {
+                const market = document.getElementById('give-market').value;
+                const customerListEl = document.getElementById('give-customer-list');
+                const customerSearchEl = document.getElementById('give-customer-search');
+                const availableBatteryListEl = document.getElementById('give-available-battery-list');
+                
+                customerListEl.innerHTML = '<li class="list-group-item">Loading...</li>';
+                customerSearchEl.value = '';
+                document.getElementById('give-customer-id').value = '';
+                availableBatteryListEl.innerHTML = '<small class="text-muted">Loading...</small>';
+
+                if (!market) {
+                    customerListEl.innerHTML = '<li class="list-group-item">Select a market to see customers.</li>';
+                    availableBatteryListEl.innerHTML = '<small class="text-muted">Select a market to see available batteries.</small>';
+                    customerSearchEl.disabled = true;
+                    return;
+                }
+
+                customerSearchEl.disabled = false;
+
+                // --- Load Customers (one-time fetch) ---
+                // Use local cache for this, it's faster
+                const customers = App.state.localCache.customers.filter(c => c.market === market);
+                const pendingCustomerIds = new Set(
+                    App.state.localCache.transactions
+                        .filter(t => t.status === 'Pending')
+                        .map(t => t.customerId)
+                );
+
+                if(customers.length === 0) {
+                    customerListEl.innerHTML = '<li class="list-group-item">No customers in this market.</li>';
+                } else {
+                    const customerItems = customers
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(c => {
+                            const hasPending = pendingCustomerIds.has(c.id);
+                            const listClass = hasPending ? 'list-group-item-danger' : 'list-group-item-success';
+                            return `
+                                <a href="#" class="list-group-item list-group-item-action ${listClass}" data-id="${c.id}" onclick="App.Give.selectCustomer(this)">
+                                    <h6 class="mb-0">${c.name}</h6>
+                                    <small>${c.mobile || 'No Phone'} | ${c.address || 'No Address'}</small>
+                                </a>
+                            `;
+                        })
+                        .join('');
+                    customerListEl.innerHTML = customerItems;
+                }
+
+                // --- Load Available Batteries (one-time fetch) ---
+                try {
+                    // Use local cache
+                    const availableBatteries = App.state.localCache.batteries.filter(
+                        b => b.market === market && b.status === 'Available'
+                    );
+
+                    if (availableBatteries.length === 0) {
+                        availableBatteryListEl.innerHTML = '<small class="text-muted">No available batteries in this market.</small>';
+                    } else {
+                        availableBatteries.sort((a, b) => a.batteryNumber.localeCompare(b.batteryNumber, undefined, { numeric: true }));
+                        availableBatteryListEl.innerHTML = availableBatteries.map(battery => {
+                            const colorClass = battery.color || 'default';
+                            return `<button type="button" class="btn btn-sm btn-outline-success m-1" onclick="App.Give.selectAvailableBattery(this, '${battery.batteryNumber}')">
+                                        <span class="batt-color-dot batt-color-${colorClass}" style="width: 8px; height: 8px; margin-right: 4px; vertical-align: middle;"></span>
+                                        ${battery.batteryNumber}
+                                    </button>`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error("Error loading available batteries:", error);
+                    availableBatteryListEl.innerHTML = '<small class="text-danger">Error loading batteries.</small>';
+                }
+            },
+
+            selectAvailableBattery: (buttonElement, batteryNumber) => {
+                // (Identical to original)
+                const textarea = document.getElementById('give-battery-numbers');
+                const currentBatteries = textarea.value.split('\n').filter(s => s.trim());
+                if (!currentBatteries.includes(batteryNumber)) {
+                    textarea.value += batteryNumber + '\n';
+                    textarea.scrollTop = textarea.scrollHeight;
+                }
+                buttonElement.disabled = true;
+                buttonElement.classList.remove('btn-outline-success');
+                buttonElement.classList.add('btn-success');
+            },
+
+            filterCustomers: () => {
+                // (Identical to original)
+                const filter = document.getElementById('give-customer-search').value.toLowerCase();
+                const list = document.getElementById('give-customer-list');
+                const items = list.getElementsByTagName('a');
+                for (let i = 0; i < items.length; i++) {
+                    const txtValue = items[i].textContent || items[i].innerText;
+                    items[i].style.display = txtValue.toLowerCase().includes(filter) ? "" : "none";
+                }
+            },
+
+            selectCustomer: (el) => {
+                // (Identical to original)
+                const id = el.dataset.id;
+                document.getElementById('give-customer-id').value = id;
+                const list = document.getElementById('give-customer-list');
+                const items = list.getElementsByTagName('a');
+                for (let i = 0; i < items.length; i++) {
+                    items[i].classList.remove('active');
+                }
+                el.classList.add('active');
+            },
+
+            submit: async () => {
+                const form = document.getElementById('giveBatteryForm');
+                if (!form.checkValidity()) {
+                    App.showToast("Error", "Please fill out all required fields.", "error");
+                    return;
+                }
+
+                const market = document.getElementById('give-market').value;
+                const customerId = document.getElementById('give-customer-id').value; // String ID
+                const batteryNumbersRaw = document.getElementById('give-battery-numbers').value;
+                const batteryNumbers = batteryNumbersRaw.split('\n').map(s => s.trim()).filter(s => s);
+
+                if (batteryNumbers.length === 0 || !customerId) {
+                    App.showToast("Error", "Please select a customer and at least one battery.", "error");
+                    return;
+                }
+
+                try {
+                    // Check all batteries
+                    const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', 'in', batteryNumbers));
+                    const snapshot = await fb.getDocs(q);
+                    
+                    const errors = [];
+                    const notFound = [];
+                    const validBatteryDocs = [];
+                    const wrongMarket = [];
+
+                    const batteryMap = new Map(snapshot.docs.map(doc => [doc.data().batteryNumber, doc]));
+                    
+                    for (const num of batteryNumbers) {
+                        const batteryDoc = batteryMap.get(num);
+                        if (!batteryDoc) {
+                            notFound.push(num);
+                        } else {
+                            const battery = batteryDoc.data();
+                            if (battery.status !== 'Available') {
+                                errors.push(`${num} is already ${battery.status}.`);
+                            } else if (battery.market !== market) {
+                                wrongMarket.push(`${num} (belongs to ${battery.market})`);
+                            } else {
+                                validBatteryDocs.push(batteryDoc);
+                            }
+                        }
+                    }
+
+                    if (notFound.length > 0 || wrongMarket.length > 0 || errors.length > 0) {
+                        if(notFound.length > 0) App.showToast("Error", `Batteries not found: ${notFound.join(', ')}`, "error");
+                        if(wrongMarket.length > 0) App.showToast("Error", `Batteries from wrong market: ${wrongMarket.join(', ')}`, "error");
+                        if(errors.length > 0) App.showToast("Error", errors.join(' '), "error");
+                        return;
+                    }
+
+                    // All good, process the transaction in a batch
+                    const batch = fb.writeBatch(fb.db);
+
+                    for (const batteryDoc of validBatteryDocs) {
+                        // 1. Create transaction record
+                        const transRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.transactions));
+                        batch.set(transRef, {
+                            customerId: customerId,
+                            batteryNumber: batteryDoc.data().batteryNumber,
+                            market: market,
+                            dateGiven: fb.serverTimestamp(),
+                            dateReturned: null,
+                            status: 'Pending'
+                        });
+
+                        // 2. Update battery status
+                        batch.update(batteryDoc.ref, { status: 'Given' });
+                    }
+                    
+                    await batch.commit();
+
+                    App.showToast("Success", `${validBatteryDocs.length} batteries given to customer.`);
+                    form.reset();
+                    document.getElementById('give-available-battery-list').innerHTML = '';
+                    App.navigateTo('dashboard'); // Go to dashboard
+                
+                } catch (error) {
+                    console.error("Error giving battery:", error);
+                    App.showToast("Error", "An error occurred. Transaction rolled back.", "error");
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 7. RETURN BATTERY MODULE (Firebase)
+        // ----------------------------------------
+        App.Return = {
+            state: {
+                currentCustomer: null
+            },
+            
+            listenForUpdates: () => {
+                const q = fb.query(fb.collection(fb.db, App.state.dbPaths.transactions));
+                
+                if (App.state.listeners.transactions) App.state.listeners.transactions(); // Unsubscribe old
+                
+                App.state.listeners.transactions = fb.onSnapshot(q, (snapshot) => {
+                    console.log("Firestore: Transactions updated");
+                    App.state.localCache.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.Return.renderList(); // Re-render the return list
+                    App.Dashboard.refresh(); // Update dashboard stats
+                }, (error) => {
+                    console.error("Error listening to transactions:", error);
+                    App.showToast("Error", "Could not load transactions.", "error");
+                });
+            },
+
+            renderList: () => {
+                const listEl = document.getElementById('return-pending-list');
+                const allCustomers = App.state.localCache.customers;
+                
+                try {
+                    const pendingTransactions = App.state.localCache.transactions.filter(t => t.status === 'Pending');
+                    const customerIds = [...new Set(pendingTransactions.map(t => t.customerId))];
+                    
+                    if (customerIds.length === 0) {
+                        listEl.innerHTML = '<div class="alert alert-success">No customers with pending returns.</div>';
+                        return;
+                    }
+
+                    const customerMap = new Map(allCustomers.map(c => [c.id, c]));
+
+                    const grouped = pendingTransactions.reduce((acc, t) => {
+                        acc[t.customerId] = (acc[t.customerId] || 0) + 1;
+                        return acc;
+                    }, {});
+
+                    let html = '';
+                    for (const id of customerIds) {
+                        const customer = customerMap.get(id);
+                        if (customer && customer.isActive) { // Only show active customers
+                            const count = grouped[id];
+                            html += `
+                                <a href="#" class="list-group-item list-group-item-action" data-customer-id="${id}" data-customer-name="${customer.name}" data-customer-phone="${customer.mobile}" onclick="App.Return.showReturnModal(this.dataset)">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">${customer.name}</h5>
+                                        <span class="badge bg-danger rounded-pill">${count}</span>
+                                    </div>
+                                    <p class="mb-1">${customer.address || 'No Address'}</p>
+                                    <small>${customer.mobile || 'No Phone'} | ${customer.market}</small>
+                                </a>
+                            `;
+                        }
+                    }
+                    listEl.innerHTML = html || '<div class="alert alert-success">No active customers with pending returns.</div>';
+                    
+                    // Since the list is rendered, filter it
+                    App.Return.filterCustomers();
+
+                } catch (error) {
+                    console.error("Error loading pending returns:", error);
+                }
+            },
+
+            filterCustomers: () => {
+                // (Identical to original)
+                const filter = document.getElementById('return-customer-search').value.toLowerCase();
+                const list = document.getElementById('return-pending-list');
+                const items = list.getElementsByTagName('a');
+                for (let i = 0; i < items.length; i++) {
+                    const txtValue = items[i].textContent || items[i].innerText;
+                    items[i].style.display = txtValue.toLowerCase().includes(filter) ? "" : "none";
+                }
+            },
+
+            showReturnModal: (customerData) => {
+                App.Return.state.currentCustomer = customerData;
+                const customerId = customerData.customerId; // String ID
+                document.getElementById('returnModalTitle').textContent = `Return for ${customerData.customerName}`;
+                document.getElementById('return-notify-footer').style.display = 'none';
+
+                const listEl = document.getElementById('return-battery-list');
+                listEl.innerHTML = '<li class="list-group-item">Loading...</li>';
+                App.state.currentReturnModal.show();
+
+                const transactions = App.state.localCache.transactions.filter(
+                    t => t.customerId === customerId && t.status === 'Pending'
+                );
+                
+                if (transactions.length === 0) {
+                    listEl.innerHTML = '<li class="list-group-item text-success">All batteries returned!</li>';
+                    App.state.currentReturnModal.hide();
+                    // Listener will refresh main list
+                    return;
+                }
+
+                listEl.innerHTML = transactions.map(t => {
+                    // Firestore timestamp to JS Date
+                    const dateGiven = t.dateGiven?.toDate ? t.dateGiven.toDate().toLocaleString() : 'N/A';
+                    return `
+                        <li class="list-group-item list-group-item-action list-group-item-danger" id="return-tx-${t.id}" onclick="App.Return.markAsReturned('${t.id}', '${t.batteryNumber}')">
+                            <i class="bi bi-battery me-2"></i>
+                            <strong>${t.batteryNumber}</strong>
+                            <small class="text-muted d-block">Given: ${dateGiven}</small>
+                        </li>
+                    `
+                }).join('');
+            },
+
+            markAsReturned: async (transactionId, batteryNumber) => {
+                try {
+                    const batch = fb.writeBatch(fb.db);
+
+                    // 1. Update transaction
+                    const transRef = fb.doc(fb.db, App.state.dbPaths.transactions, transactionId);
+                    batch.update(transRef, {
+                        status: 'Returned',
+                        dateReturned: fb.serverTimestamp()
+                    });
+
+                    // 2. Find and update battery
+                    const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', '==', batteryNumber), fb.limit(1));
+                    const snapshot = await fb.getDocs(q);
+                    
+                    if (snapshot.empty) {
+                        throw new Error(`Battery ${batteryNumber} not found!`);
+                    }
+                    const batteryDoc = snapshot.docs[0];
+                    batch.update(batteryDoc.ref, { status: 'Available' });
+                    
+                    // Commit batch
+                    await batch.commit();
+
+                    App.showToast("Success", `Battery ${batteryNumber} marked as returned.`);
+                    
+                    // Show notification footer
+                    const customer = App.Return.state.currentCustomer;
+                    if (customer.customerPhone) {
+                        const waLink = document.getElementById('return-whatsapp-link');
+                        const message = encodeURIComponent(`Thank you for returning your battery (${batteryNumber}).`);
+                        waLink.href = `https://wa.me/91${customer.customerPhone}?text=${message}`;
+                        document.getElementById('return-notify-footer').style.display = 'block';
+                    }
+
+                    // Remove item from modal list
+                    const itemEl = document.getElementById(`return-tx-${transactionId}`);
+                    if (itemEl) itemEl.remove();
+
+                    // Check if list is empty
+                    const listEl = document.getElementById('return-battery-list');
+                    if (listEl.children.length === 0) {
+                        App.state.currentReturnModal.hide();
+                        // Listeners will refresh main list and dashboard
+                    }
+
+                } catch (error) {
+                    console.error("Error marking as returned:", error);
+                    App.showToast("Error", `Could not mark battery as returned: ${error.message}`, "error");
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 8. REPORTS MODULE (Firebase)
+        // ----------------------------------------
+        App.Reports = {
+            state: {
+                reportData: []
+            },
+            
+            load: () => {
+                // (Identical to original)
+                document.getElementById('report-date-start').valueAsDate = new Date(new Date().setDate(new Date().getDate() - 7));
+                document.getElementById('report-date-end').valueAsDate = new Date();
+                document.getElementById('report-results').innerHTML = '<tr><td colspan="6">Generate a report to see results.</td></tr>';
+                document.getElementById('report-summary').innerHTML = '';
+            },
+
+            generate: async () => {
+                const market = document.getElementById('report-market').value;
+                const startDate = new Date(document.getElementById('report-date-start').value);
+                const endDate = new Date(document.getElementById('report-date-end').value);
+
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                
+                // Firestore queries
+                let queries = [
+                    fb.where('dateGiven', '>=', startDate),
+                    fb.where('dateGiven', '<=', endDate)
+                ];
+                
+                if (market !== 'All') {
+                    queries.push(fb.where('market', '==', market));
+                }
+
+                const q = fb.query(fb.collection(fb.db, App.state.dbPaths.transactions), ...queries);
+                const snapshot = await fb.getDocs(q);
+                
+                const transactions = snapshot.docs.map(doc => doc.data());
+                
+                if (transactions.length === 0) {
+                    document.getElementById('report-results').innerHTML = '<tr><td colspan="6">No data found for this period.</td></tr>';
+                    document.getElementById('report-summary').innerHTML = '';
+                    App.Reports.state.reportData = [];
+                    return;
+                }
+
+                // Use local customer cache
+                const customerMap = new Map(App.state.localCache.customers.map(c => [c.id, c.name]));
+
+                const exportData = [];
+                let given = 0;
+                let returned = 0;
+                let pending = 0;
+
+                const tableHtml = transactions.map(t => {
+                    const customerName = customerMap.get(t.customerId) || 'Unknown';
+                    const dateGiven = t.dateGiven.toDate().toLocaleString();
+                    const dateReturned = t.dateReturned ? t.dateReturned.toDate().toLocaleString() : 'N/A';
+                    
+                    if (t.status === 'Pending') pending++;
+                    if (t.status === 'Returned') returned++;
+                    given++;
+
+                    exportData.push({
+                        "Date Given": dateGiven,
+                        "Market": t.market,
+                        "Customer": customerName,
+                        "Battery #": t.batteryNumber,
+                        "Status": t.status,
+                        "Date Returned": dateReturned
+                    });
+
+                    return `
+                        <tr>
+                            <td>${dateGiven}</td>
+                            <td>${t.market}</td>
+                            <td>${customerName}</td>
+                            <td>${t.batteryNumber}</td>
+                            <td><span class="badge status-${t.status.toLowerCase()}">${t.status}</span></td>
+                            <td>${dateReturned}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                App.Reports.state.reportData = exportData;
+                document.getElementById('report-results').innerHTML = tableHtml;
+
+                document.getElementById('report-summary').innerHTML = `
+                    <span class="badge fs-6 text-bg-primary me-2">Total Given: ${given}</span>
+                    <span class="badge fs-6 text-bg-success me-2">Total Returned: ${returned}</span>
+                    <span class="badge fs-6 text-bg-danger">Total Pending: ${pending}</span>
+                `;
+            },
+
+            export: (type) => {
+                // (Identical to original)
+                const data = App.Reports.state.reportData;
+                if (data.length === 0) {
+                    App.showToast("Info", "No data to export. Please generate a report first.", "info");
+                    return;
+                }
+                const filename = `Battery_Report_${new Date().toISOString().split('T')[0]}`;
+                const ws = XLSX.utils.json_to_sheet(data);
+                if (type === 'csv') {
+                    const csv = XLSX.utils.sheet_to_csv(ws);
+                    App.Settings.downloadFile(csv, `${filename}.csv`, 'text/csv');
+                } else {
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Report");
+                    XLSX.writeFile(wb, `${filename}.xlsx`);
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 9. SETTINGS MODULE (Firebase)
+        // ----------------------------------------
+        App.Settings = {
+            loadAndListen: () => {
+                const docRef = fb.doc(fb.db, App.state.dbPaths.settings, 'appSettings');
+                
+                if (App.state.listeners.settings) App.state.listeners.settings(); // Unsubscribe old
+
+                App.state.listeners.settings = fb.onSnapshot(docRef, (doc) => {
+                    let markets = ['Sunday', 'Wednesday', 'Friday', 'Unassigned']; // Default
+                    if (doc.exists()) {
+                        console.log("Firestore: Settings updated");
+                        markets = doc.data().value || markets;
+                    } else {
+                        // Doc doesn't exist, create it
+                        console.log("No settings doc, creating one with defaults.");
+                        App.Settings.saveMarkets(markets.join(', '));
+                    }
+                    App.state.markets = markets;
+                    document.getElementById('settings-market-list').value = markets.join(', ');
+                    App.populateMarketSelects();
+                }, (error) => {
+                    console.error("Error loading settings:", error);
+                });
+            },
+
+            saveMarkets: async (marketsString = null) => {
+                marketsString = marketsString || document.getElementById('settings-market-list').value;
+                const markets = marketsString.split(',').map(m => m.trim()).filter(m => m);
+                
+                try {
+                    const docRef = fb.doc(fb.db, App.state.dbPaths.settings, 'appSettings');
+                    await fb.setDoc(docRef, { value: markets });
+                    
+                    App.state.markets = markets;
+                    App.populateMarketSelects();
+                    App.showToast("Success", "Market list updated.");
+                } catch (error) {
+                    App.showToast("Error", "Could not save markets.", "error");
+                }
+            },
+
+            // Removed backup/restore/clear all
+            downloadFile: (content, fileName, contentType) => {
+                // (Identical to original)
+                const a = document.createElement("a");
+                const file = new Blob([content], { type: contentType });
+                a.href = URL.createObjectURL(file);
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            },
+
+            showResetModal: () => {
+                document.getElementById('reset-confirm-text').value = '';
+                App.state.currentResetModal.show();
+            },
+
+            confirmResetDailyData: async () => {
+                const confirmText = document.getElementById('reset-confirm-text').value;
+                if (confirmText !== "RESET") {
+                    App.showToast("Error", "Confirmation text does not match.", "error");
+                    return;
+                }
+
+                App.showToast("Info", "Resetting data... Please wait.", "info");
+                App.state.currentResetModal.hide();
+                
+                try {
+                    const batch = fb.writeBatch(fb.db);
+
+                    // 1. Delete all transactions
+                    const transSnapshot = await fb.getDocs(fb.collection(fb.db, App.state.dbPaths.transactions));
+                    transSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+                    // 2. Mark all 'Given' batteries as 'Available'
+                    const battSnapshot = await fb.getDocs(fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('status', '==', 'Given')));
+                    battSnapshot.docs.forEach(doc => batch.update(doc.ref, { status: 'Available' }));
+
+                    await batch.commit();
+                    
+                    App.showToast("Success", "Daily data has been reset.");
+                    // Listeners will update UI
+                    
+                } catch (error) { 
+                    console.error("Reset failed:", error);
+                    App.showToast("Error", "Could not reset data.", "error");
+                }
+            }
+        };
+
+        // ----------------------------------------
+        // 10. APP INITIALIZATION
+        // ----------------------------------------
+        window.App = App; // Make App global for inline onclick handlers
+        App.init();
+
+    </script>
+</body>
+</html>
