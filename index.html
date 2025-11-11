@@ -148,7 +148,7 @@
     <main class="container-fluid mt-3">
 
         <!-- ============================================== -->
-        <!-- == PAGE: DASHBOARD                      == -->
+        <!-- == PAGE: DASHBOARD                          == -->
         <!-- ============================================== -->
         <div id="page-dashboard" class="page active">
             <!-- ... existing dashboard ... -->
@@ -158,7 +158,7 @@
                     <!-- Markets will be populated here -->
                 </select>
             </div>
-            
+           
             <!-- Stats Cards -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
@@ -232,13 +232,13 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: GIVE BATTERY (MANUAL)            == -->
+        <!-- == PAGE: GIVE BATTERY (MANUAL)              == -->
         <!-- ============================================== -->
         <div id="page-give-battery" class="page">
             <!-- ... existing give battery page ... -->
             <h2 class="h4 mb-3">Give Battery (Manual Entry)</h2>
             <p>This page is for assigning *specific* battery numbers to a customer.</p>
-            
+           
             <form id="giveBatteryForm" onsubmit="App.Give.submit(); return false;">
                 <!-- Step 1: Select Market -->
                 <div class="mb-3">
@@ -282,30 +282,20 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: RETURN BATTERY                   == -->
+        <!-- == PAGE: RETURN BATTERY                       == -->
         <!-- ============================================== -->
         <div id="page-return-battery" class="page">
             <!-- ... existing return battery page ... -->
             <h2 class="h4 mb-3">Return Battery</h2>
             <p>Showing customers with pending battery returns.</p>
             <input type="text" class="form-control mb-3" id="return-customer-search" placeholder="Search customers..." onkeyup="App.Return.filterCustomers()">
-            
-            <!-- *** NEW: Market Filter *** -->
-            <div class="input-group mb-3">
-                <label class="input-group-text" for="return-market-filter">Market</label>
-                <select class="form-select" id="return-market-filter" onchange="App.Return.renderList()">
-                    <option value="All">All Markets</option>
-                    <!-- Markets will be populated by JS -->
-                </select>
-            </div>
-
             <div id="return-pending-list" class="list-group">
                 <!-- Pending customers will be populated here -->
             </div>
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: CUSTOMER MANAGEMENT              == -->
+        <!-- == PAGE: CUSTOMER MANAGEMENT                == -->
         <!-- ============================================== -->
         <div id="page-customers" class="page">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -314,13 +304,13 @@
                     <i class="bi bi-plus-circle"></i> Add New
                 </button>
             </div>
-            
+           
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <!-- *** UPDATED: Placeholder text *** -->
                 <input type="text" class="form-control" id="customer-search" placeholder="Search by name, serial, phone, or address..." onkeyup="App.Customers.filterList()">
             </div>
-            
+           
             <div class="input-group mb-3">
                 <label class="input-group-text" for="customer-market-filter">Market</label>
                 <select class="form-select" id="customer-market-filter" onchange="App.updateGlobalMarket(this.value)">
@@ -334,7 +324,7 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: BATTERY MANAGEMENT               == -->
+        <!-- == PAGE: BATTERY MANAGEMENT                   == -->
         <!-- ============================================== -->
         <div id="page-batteries" class="page">
             <!-- ... existing battery page ... -->
@@ -352,7 +342,7 @@
                     </button>
                 </div>
             </div>
-            
+           
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" id="battery-search" placeholder="Search by battery number..." onkeyup="App.Batteries.filterList()">
@@ -380,12 +370,12 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: REPORTS                        == -->
+        <!-- == PAGE: REPORTS                            == -->
         <!-- ============================================== -->
         <div id="page-reports" class="page">
             <!-- ... existing reports page ... -->
             <h2 class="h4 mb-3">Reports</h2>
-            
+           
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
                     <label for="report-market" class="form-label">Market</label>
@@ -437,7 +427,7 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: SETTINGS                       == -->
+        <!-- == PAGE: SETTINGS                           == -->
         <!-- ============================================== -->
         <div id="page-settings" class="page">
             <h2 class="h4 mb-3">Settings</h2>
@@ -454,7 +444,7 @@
                     <button class="btn btn-primary" onclick="App.Settings.saveMarkets()">Save Markets</button>
                 </div>
             </div>
-            
+           
             <!-- *** NEW: Bulk Import Customers *** -->
             <div class="card mb-3">
                 <div class="card-body">
@@ -467,23 +457,6 @@
                         <i class="bi bi-upload"></i> Choose File & Import
                         <input type="file" id="customer-import-file" accept=".xlsx, .csv" onchange="App.Settings.handleCustomerImport(event)">
                     </span>
-                </div>
-            </div>
-
-            <!-- *** NEW: Export Data *** -->
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Export Data</h5>
-                    <p class="card-text">Download a complete list of your data as an Excel (.xlsx) file.</p>
-                    <button class="btn btn-success me-2 mb-2" onclick="App.Settings.exportData('customers')">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Customer List
-                    </button>
-                    <button class="btn btn-success me-2 mb-2" onclick="App.Settings.exportData('batteries')">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Battery List
-                    </button>
-                    <button class="btn btn-success mb-2" onclick="App.Settings.exportData('markets')">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> Export Market List
-                    </button>
                 </div>
             </div>
 
@@ -508,7 +481,7 @@
     </main>
 
     <!-- ============================================== -->
-    <!-- == BOTTOM NAVIGATION                      == -->
+    <!-- == BOTTOM NAVIGATION                        == -->
     <!-- ============================================== -->
     <nav class="navbar fixed-bottom navbar-light bottom-nav nav-pills nav-fill">
         <!-- ... existing bottom nav ... -->
@@ -535,7 +508,7 @@
     </nav>
 
     <!-- ============================================== -->
-    <!-- == MODALS                                 == -->
+    <!-- == MODALS                                   == -->
     <!-- ============================================== -->
 
     <!-- Customer Add/Edit Modal -->
@@ -549,7 +522,7 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="customer-id">
-                        
+                       
                         <!-- *** NEW: Customer Serial No. *** -->
                         <div class="mb-3">
                             <label for="customer-serial" class="form-label">Customer Serial No. (Optional)</label>
@@ -667,7 +640,7 @@
                             <select class="form-select" id="battery-range-color">
                                 <option value="default">Default (Grey)</option>
                                 <option value="green">Green</option>
-                                <option value="pink">Pink</option>
+                                <option valuea="pink">Pink</option>
                                 <option value="blue">Blue</option>
                                 <option value="red">Red</option>
                                 <option value="yellow">Yellow</option>
@@ -722,7 +695,7 @@
                         <input type="hidden" id="quick-give-customer-id">
                         <input type="hidden" id="quick-give-customer-market">
                         <p id="quick-give-customer-name-display" class="fw-bold"></p>
-                        
+                       
                         <div class="mb-3">
                             <label for="quick-give-battery-count" class="form-label">Number of batteries to give:</label>
                             <input type="number" class="form-control form-control-lg" id="quick-give-battery-count" required min="1" value="1">
@@ -800,7 +773,7 @@
 
 
     <!-- ============================================== -->
-    <!-- == TOAST CONTAINER                        == -->
+    <!-- == TOAST CONTAINER                          == -->
     <!-- ============================================== -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
         <!-- ... existing toast ... -->
@@ -818,11 +791,11 @@
 
 
     <!-- ============================================== -->
-    <!-- == JAVASCRIPT LIBRARIES                   == -->
+    <!-- == JAVASCRIPT LIBRARIES                     == -->
     <!-- ============================================== -->
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+   
     <!-- SheetJS (Excel Export & Import) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
@@ -860,15 +833,12 @@
         // ----------------------------------------
         // 1. FIREBASE SETUP
         // ----------------------------------------
-        
+       
         // Use provided config variables
-        // IMPORTANT: These __variables__ are placeholders.
-        // You MUST replace them with your actual Firebase config
-        // or ensure they are provided by your hosting environment.
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
             : {
-                // This is a SAMPLE config. Replace with your project's config.
+                // This is the user's provided config
                 apiKey: "AIzaSyA-5Z_HVVwHn14czFkt14__srZ4U14ypXw",
                 authDomain: "rental1-7718e.firebaseapp.com",
                 projectId: "rental1-7718e",
@@ -883,7 +853,7 @@
         const fbApp = initializeApp(firebaseConfig);
         const db = getFirestore(fbApp);
         const auth = getAuth(fbApp);
-        
+       
         // Enable Firestore debug logging
         setLogLevel('debug');
 
@@ -903,18 +873,18 @@
             }
             return chunks;
         };
-        
+       
         // ----------------------------------------
         // 2. MAIN APP CONTROLLER (Firebase-enabled)
         // ----------------------------------------
         const App = {
-            
+           
             // App state
             state: {
                 markets: ['Sunday', 'Wednesday', 'Friday', 'Unassigned'],
                 globalMarketFilter: 'All',
                 currentPage: 'dashboard',
-                
+               
                 // Modal instances
                 currentCustomerModal: null,
                 currentBatteryModal: null,
@@ -924,12 +894,12 @@
                 currentResetModal: null, 
                 currentClearAllModal: null, 
                 appToast: null,
-                
+               
                 // Auth & Data State
                 userId: null,
                 isAuthReady: false,
                 isDataReady: false,
-                
+               
                 // Firestore Listeners (to unsubscribe later)
                 listeners: {
                     customers: null,
@@ -937,14 +907,14 @@
                     transactions: null,
                     settings: null
                 },
-                
+               
                 // Local Caches (for filtering)
                 localCache: {
                     customers: [],
                     batteries: [],
                     transactions: []
                 },
-                
+               
                 // Firestore Paths
                 dbPaths: {
                     customers: `artifacts/${appId}/public/data/customers`,
@@ -1036,7 +1006,7 @@
                     }
                 });
             },
-            
+           
             initAppLogic: () => {
                 // ... existing app logic init ...
                 console.log("Initializing app logic and data listeners...");
@@ -1262,21 +1232,21 @@
                 }
 
                 // Sort by new natural sort and render
-                filteredCustomers.sort(App.naturalSort).forEach((customer, index) => {
-                    const serial = customer.serialNumber || ''; // Get serial
-                    listEl.innerHTML += `
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <!-- Display Serial -->
-                                <h6 class="mb-0 d-inline-block text-muted" style="width: 50px; vertical-align: top; font-weight: bold;">${serial}</h6>
-                                
-                                <div class="d-inline-block" style="vertical-align: top; margin-left: 5px;">
-                                    <h6 class="mb-0">${customer.name}</h6>
-                                    <small class="text-muted">${customer.mobile || 'No Phone'} | ${customer.market}</small><br>
-                                    <small class="text-muted">${customer.address || 'No Address'}</small>
+            filteredCustomers.sort(App.naturalSort).forEach((customer, index) => {
+                const serial = customer.serialNumber || ''; // Get serial
+                listEl.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-start"> <!-- align-items-start is better -->
+                            <div style="min-width: 0; margin-right: 1rem; flex-grow: 1;"> <!-- This div will grow and wrap -->
+                                <div class="d-flex">
+                                    <span class="text-muted fw-bold" style="width: 50px; flex-shrink: 0;">${serial}</span>
+                                    <div style="margin-left: 5px;">
+                                        <h6 class="mb-0" style="word-wrap: break-word;">${customer.name}</h6>
+                                        <small class="text-muted">${customer.mobile || 'No Phone'} | ${customer.market}</small><br>
+                                        <small class="text-muted" style="word-wrap: break-word;">${customer.address || 'No Address'}</small>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="btn-group">
+                            <div class="btn-group" style="flex-shrink: 0;"> <!-- This div will not shrink -->
                                 <button class="btn btn-sm btn-outline-success" title="Quick Give" onclick="App.Customers.showQuickGiveModal('${customer.id}', '${customer.name}', '${customer.market}')">
                                     <i class="bi bi-lightning-fill"></i>
                                 </button>
@@ -1289,7 +1259,7 @@
                             </div>
                         </li>
                     `;
-                });
+            });
             },
 
             // *** UPDATED: showModal ***
@@ -1299,7 +1269,7 @@
                 form.classList.remove('was-validated');
                 document.getElementById('customer-id').value = '';
                 document.getElementById('customer-serial').classList.remove('is-invalid'); // Reset error
-                
+               
                 if (id) {
                     // Edit mode
                     document.getElementById('customerModalTitle').textContent = 'Edit Customer';
@@ -1339,7 +1309,7 @@
                 return String(maxSerial + 1); // Return as a string
             },
 
-            // *** UPDATED: save (now includes shift logic) ***
+            // *** UPDATED: save ***
             save: async () => {
                 const form = document.getElementById('customerForm');
                 if (!form.checkValidity()) {
@@ -1350,7 +1320,7 @@
                 const id = document.getElementById('customer-id').value;
                 const serialInput = document.getElementById('customer-serial');
                 const serial = serialInput.value.trim();
-                
+               
                 // --- NEW: Auto-increment logic ---
                 let finalSerial = serial;
                 if (!id && !serial) { // Only auto-increment on ADD and if serial is BLANK
@@ -1368,87 +1338,45 @@
                 };
 
                 try {
-                    let finalSerialNum = parseInt(finalSerial, 10);
-
-                    // --- NEW SHIFT LOGIC ---
-                    // We only shift if the new serial is a valid number.
-                    if (finalSerial && !isNaN(finalSerialNum)) {
-                        
-                        // 1. Find all customers that need to be shifted
-                        const customersToShift = App.state.localCache.customers.filter(c => {
-                            // Exclude the customer we're currently editing (if any)
-                            if (c.id === id) return false; 
-                            
-                            const existingNum = parseInt(c.serialNumber, 10);
-                            // Check if the existing serial is a number and is >= the one we want to insert
-                            return !isNaN(existingNum) && existingNum >= finalSerialNum;
-                        });
-
-                        // 2. If we found customers to shift, process them in a batch
-                        if (customersToShift.length > 0) {
-                            App.showToast("Info", `Serial collision detected. Shifting ${customersToShift.length} customers...`, "info");
-
-                            // Sort DESCENDING to avoid overwriting. (e.g., move 3->4 before 2->3)
-                            customersToShift.sort((a, b) => parseInt(b.serialNumber, 10) - parseInt(a.serialNumber, 10));
-
-                            const batch = fb.writeBatch(fb.db);
-
-                            // 3. Update all existing customers
-                            for (const customer of customersToShift) {
-                                const oldNum = parseInt(customer.serialNumber, 10);
-                                const newNum = String(oldNum + 1);
-                                const docRef = fb.doc(fb.db, App.state.dbPaths.customers, customer.id);
-                                batch.update(docRef, { serialNumber: newNum });
-                            }
-
-                            // 4. Add the new/edited customer to the same batch
-                            if (id) {
-                                // Update the customer we were editing
-                                const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                                batch.update(docRef, customerData);
-                            } else {
-                                // Add the new customer
-                                const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.customers));
-                                batch.set(docRef, customerData);
-                            }
-
-                            // 5. Commit all changes at once
-                            await batch.commit();
-                            App.showToast("Success", "Customer saved and serial numbers shifted.");
-
-                        } else {
-                            // No collision, just save normally
-                            if (id) {
-                                const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                                await fb.updateDoc(docRef, customerData);
-                                App.showToast("Success", "Customer updated successfully.");
-                            } else {
-                                const collRef = fb.collection(fb.db, App.state.dbPaths.customers);
-                                await fb.addDoc(collRef, customerData);
-                                App.showToast("Success", "Customer added successfully.");
+                    // Check for duplicate serial number
+                    if (finalSerial) { // Check using finalSerial
+                        const q = fb.query(
+                            fb.collection(fb.db, App.state.dbPaths.customers), 
+                            fb.where('serialNumber', '==', finalSerial), // Check using finalSerial
+                            fb.where('isActive', '==', 1)
+                        );
+                        const snapshot = await fb.getDocs(q);
+                       
+                        let isDuplicate = false;
+                        if (!snapshot.empty) {
+                            if (id) { // Edit mode
+                                // It's a duplicate only if it's not THIS customer
+                                isDuplicate = snapshot.docs.some(doc => doc.id !== id);
+                            } else { // Add mode
+                                isDuplicate = true;
                             }
                         }
-                    
-                    } else {
-                        // --- END NEW SHIFT LOGIC ---
-                        
-                        // --- This is the "normal" save logic for non-numeric serials ---
-                        // (Or if the serial was blank and auto-generated, which won't collide)
-                        serialInput.classList.remove('is-invalid');
 
-                        if (id) {
-                            // Update
-                            const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                            await fb.updateDoc(docRef, customerData);
-                            App.showToast("Success", "Customer updated successfully.");
-                        } else {
-                            // Create
-                            const collRef = fb.collection(fb.db, App.state.dbPaths.customers);
-                            await fb.addDoc(collRef, customerData);
-                            App.showToast("Success", "Customer added successfully.");
+                        if (isDuplicate) {
+                            serialInput.classList.add('is-invalid');
+                            App.showToast("Error", `Serial number "${finalSerial}" already exists.`, "error"); // Use finalSerial
+                            return;
                         }
                     }
-                    
+                    serialInput.classList.remove('is-invalid');
+
+
+                    if (id) {
+                        // Update
+                        const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
+                        await fb.updateDoc(docRef, customerData);
+                        App.showToast("Success", "Customer updated successfully.");
+                    } else {
+                        // Create
+                        const collRef = fb.collection(fb.db, App.state.dbPaths.customers);
+                        await fb.addDoc(collRef, customerData);
+                        App.showToast("Success", "Customer added successfully.");
+                    }
                     App.state.currentCustomerModal.hide();
                     // Listener will update UI
                 } catch (error) {
@@ -1460,70 +1388,10 @@
             delete: async (id) => {
                 // ... existing delete logic ...
                 try {
-                    // --- NEW SHIFT-DOWN LOGIC ---
-
-                    // 1. Find the customer to be deleted from the local cache
-                    const customerToDelete = App.state.localCache.customers.find(c => c.id === id);
-                    if (!customerToDelete) {
-                        App.showToast("Error", "Could not find customer to delete.", "error");
-                        return;
-                    }
-
-                    const serial = customerToDelete.serialNumber;
-                    const serialNum = parseInt(serial, 10);
-
-                    // 2. Check if serial is a valid number
-                    if (serial && !isNaN(serialNum)) {
-                        
-                        // 3. Find all customers that need to be shifted down
-                        const customersToShift = App.state.localCache.customers.filter(c => {
-                            const existingNum = parseInt(c.serialNumber, 10);
-                            // Find customers with a numeric serial > the one being deleted
-                            return !isNaN(existingNum) && existingNum > serialNum;
-                        });
-
-                        // 4. If we have customers to shift, process them
-                        if (customersToShift.length > 0) {
-                            App.showToast("Info", `Shifting ${customersToShift.length} customers down...`, "info");
-                            
-                            // Sort ASCENDING (6, 7, 8) to shift 6->5, 7->6, 8->7
-                            customersToShift.sort((a, b) => parseInt(a.serialNumber, 10) - parseInt(b.serialNumber, 10));
-
-                            const batch = fb.writeBatch(fb.db);
-
-                            // 5. Update all customers in the batch
-                            for (const customer of customersToShift) {
-                                const oldNum = parseInt(customer.serialNumber, 10);
-                                const newNum = String(oldNum - 1);
-                                const docRef = fb.doc(fb.db, App.state.dbPaths.customers, customer.id);
-                                batch.update(docRef, { serialNumber: newNum });
-                            }
-
-                            // 6. Add the original customer deletion (soft delete) to the batch
-                            const deleteDocRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                            batch.update(deleteDocRef, { isActive: 0 }); // Soft delete
-
-                            // 7. Commit all changes
-                            await batch.commit();
-                            App.showToast("Success", "Customer deleted and serial numbers shifted.");
-
-                        } else {
-                            // No customers to shift, just delete this one
-                            const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                            await fb.updateDoc(docRef, { isActive: 0 });
-                            App.showToast("Success", "Customer marked as inactive.");
-                        }
-
-                    } else {
-                        // --- END NEW SHIFT LOGIC ---
-                        
-                        // Original logic for non-numeric serials
-                        const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
-                        await fb.updateDoc(docRef, { isActive: 0 });
-                        App.showToast("Success", "Customer marked as inactive.");
-                    }
+                    const docRef = fb.doc(fb.db, App.state.dbPaths.customers, id);
+                    await fb.updateDoc(docRef, { isActive: 0 });
+                    App.showToast("Success", "Customer marked as inactive.");
                 } catch (error) {
-                    console.error("Error deleting customer:", error); // Added console log for debugging
                     App.showToast("Error", "Could not delete customer.", "error");
                 }
             },
@@ -1631,12 +1499,12 @@
                     const colorClass = battery.color || 'default';
                     listEl.innerHTML += `
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
+                            <div style="min-width: 0; margin-right: 1rem; flex-grow: 1;"> <!-- Grow and wrap -->
                                 <span class="batt-color-dot batt-color-${colorClass}"></span>
-                                <h6 class="mb-0 d-inline-block">${battery.batteryNumber}</h6>
+                                <h6 class="mb-0 d-inline-block" style="word-wrap: break-word;">${battery.batteryNumber}</h6>
                                 <small class="text-muted d-block">${battery.market || 'Unassigned'}</small>
                             </div>
-                            <div>
+                            <div style="flex-shrink: 0;" class="d-flex align-items-center"> <!-- Don't shrink -->
                                 <span class="badge rounded-pill me-3 status-${statusClass.replace('status-', '')}">${statusText}</span>
                                 <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="App.Batteries.delete('${battery.id}', '${battery.status}')">
                                     <i class="bi bi-trash"></i>
@@ -1723,10 +1591,7 @@
                     return;
                 }
                 App.showToast("Info", `Adding ${totalToAdd} batteries. Please wait...`, "info");
-                
-                // *** MODIFICATION: Re-added this line to close the modal on submit ***
                 App.state.currentBatteryRangeModal.hide();
-                
                 const batteriesToAdd = [];
                 const batteryNumbers = [];
                 for (let i = start; i <= end; i++) {
@@ -1773,14 +1638,6 @@
                     App.showToast("Error", "An error occurred during bulk add.", "error");
                     console.error(e);
                 }
-
-                // *** MODIFICATION: Removed the code that reset the fields ***
-                /*
-                document.getElementById('battery-range-prefix').value = '';
-                document.getElementById('battery-range-start').value = '';
-                document.getElementById('battery-range-end').value = '';
-                document.getElementById('battery-range-prefix').focus(); // Focus prefix for next entry
-                */
             },
             delete: async (id, status) => {
                 try {
@@ -1996,17 +1853,8 @@
             renderList: () => {
                 const listEl = document.getElementById('return-pending-list');
                 const allCustomers = App.state.localCache.customers;
-
-                // *** NEW: Get market filter value ***
-                const marketFilter = document.getElementById('return-market-filter').value;
-
                 try {
-                    // *** UPDATED: Filter transactions by status AND market ***
-                    const allPending = App.state.localCache.transactions.filter(t => t.status === 'Pending');
-                    const pendingTransactions = (marketFilter === 'All')
-                        ? allPending
-                        : allPending.filter(t => t.market === marketFilter);
-
+                    const pendingTransactions = App.state.localCache.transactions.filter(t => t.status === 'Pending');
                     const customerIds = [...new Set(pendingTransactions.map(t => t.customerId))];
                     if (customerIds.length === 0) {
                         listEl.innerHTML = '<div class="alert alert-success">No customers with pending returns.</div>';
@@ -2025,10 +1873,10 @@
                             html += `
                                 <a href="#" class="list-group-item list-group-item-action" data-customer-id="${id}" data-customer-name="${customer.name}" data-customer-phone="${customer.mobile}" onclick="App.Return.showReturnModal(this.dataset)">
                                     <div class="d-flex w-100 justify-content-between">
-                                        <h5 class="mb-1">${customer.name}</h5>
-                                        <span class="badge bg-danger rounded-pill">${count}</span>
+                                        <h5 class="mb-1" style="word-wrap: break-word;">${customer.name}</h5>
+                                        <span class="badge bg-danger rounded-pill" style="flex-shrink: 0;">${count}</span>
                                     </div>
-                                    <p class="mb-1">${customer.address || 'No Address'}</p>
+                                    <p class="mb-1" style="word-wrap: break-word;">${customer.address || 'No Address'}</p>
                                     <small>${customer.mobile || 'No Phone'} | ${customer.market}</small>
                                 </a>
                             `;
@@ -2171,12 +2019,12 @@
                     });
                     return `
                         <tr>
-                            <td>${dateGiven}</td>
-                            <td>${t.market}</td>
-                            <td>${customerName}</td>
-                            <td>${t.batteryNumber}</td>
+                            <td style="word-break: break-all;">${dateGiven}</td>
+                            <td style="word-break: break-all;">${t.market}</td>
+                            <td style="word-break: break-all;">${customerName}</td>
+                            <td style="word-break: break-all;">${t.batteryNumber}</td>
                             <td><span class="badge status-${t.status.toLowerCase()}">${t.status}</span></td>
-                            <td>${dateReturned}</td>
+                            <td style="word-break: break-all;">${dateReturned}</td>
                         </tr>
                     `;
                 }).join('');
@@ -2264,7 +2112,7 @@
                             App.showToast("Error", "File is empty or not formatted correctly.", "error");
                             return;
                         }
-                        
+                       
                         if (jsonData.length > 400) {
                             App.showToast("Error", "Cannot import more than 400 customers at a time.", "error");
                             return;
@@ -2283,59 +2131,46 @@
                         const batch = fb.writeBatch(fb.db);
                         let addedCount = 0;
                         let failedCount = 0;
-
-                        // --- MODIFICATION: Make checks case-insensitive ---
-                        // Create a map for case-insensitive market matching (e.g., 'sunday' -> 'Sunday')
-                        const marketMap = new Map(App.state.markets.map(m => [m.toLowerCase(), m]));
-                        // Create a set of lowercase serials for duplicate checking
-                        const existingSerials = new Set(App.state.localCache.customers.map(c => c.serialNumber.toLowerCase()).filter(s => s));
-                        // --- End Modification ---
+                        const existingSerials = new Set(App.state.localCache.customers.map(c => c.serialNumber).filter(s => s));
 
                         for (const row of jsonData) {
                             const name = row.name ? String(row.name).trim() : '';
                             const market = row.market ? String(row.market).trim() : '';
                             const serial = row.serialNumber ? String(row.serialNumber).trim() : '';
-                            
+                           
                             // Basic validation
                             if (!name || !market) {
                                 failedCount++;
                                 continue;
                             }
-                            
-                            // --- MODIFICATION: Case-insensitive market check ---
-                            const marketLower = market.toLowerCase();
-                            if (!marketMap.has(marketLower)) {
+                           
+                            // Check if market exists
+                            if (!App.state.markets.includes(market)) {
                                 App.showToast("Error", `Market "${market}" for customer "${name}" does not exist in Settings. Import stopped.`, "error");
                                 // Stop the whole import if a market is bad
                                 return;
                             }
-                            // Get the *correctly* cased market name from our map
-                            const correctMarket = marketMap.get(marketLower);
-                            // --- End Modification ---
 
-
-                            // --- MODIFICATION: Case-insensitive serial check ---
+                            // Check for duplicate serial
                             if (serial) {
-                                const serialLower = serial.toLowerCase();
-                                if (existingSerials.has(serialLower)) {
+                                if (existingSerials.has(serial)) {
                                     console.warn(`Skipping duplicate serial: ${serial}`);
                                     failedCount++;
                                     continue; // Skip duplicate
                                 }
-                                existingSerials.add(serialLower); // Add to set for this batch
+                                existingSerials.add(serial); // Add to set for this batch
                             }
-                            // --- End Modification ---
 
                             // All good, add to batch
                             const newCustomer = {
                                 name: name,
-                                market: correctMarket, // Use the correctly-cased market name
+                                market: market,
                                 mobile: row.mobile ? String(row.mobile).trim() : '',
                                 address: row.address ? String(row.address).trim() : '',
                                 serialNumber: serial,
                                 isActive: 1
                             };
-                            
+                           
                             const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.customers));
                             batch.set(docRef, newCustomer);
                             addedCount++;
@@ -2355,82 +2190,12 @@
 
                     } catch (error) {
                         console.error("Import failed:", error);
-                        // *** MODIFICATION: Show the specific error message ***
-                        App.showToast("Error", `Import Failed: ${error.message}`, "error");
+                        App.showToast("Error", "File import failed. Check file format & data.", "error");
                     } finally {
                         event.target.value = null; // Reset file input
                     }
                 };
                 reader.readAsBinaryString(file);
-            },
-
-            // *** NEW: exportData ***
-            exportData: (type) => {
-                let data = [];
-                let filename = `BatteryManager_Export_${new Date().toISOString().split('T')[0]}`;
-
-                switch (type) {
-                    case 'customers':
-                        if (App.state.localCache.customers.length === 0) {
-                            App.showToast("Info", "No customers to export.", "info");
-                            return;
-                        }
-                        data = App.state.localCache.customers.map(c => ({
-                            serialNumber: c.serialNumber || '',
-                            name: c.name,
-                            market: c.market,
-                            mobile: c.mobile || '',
-                            address: c.address || ''
-                        }));
-                        filename = `Customer_List_${new Date().toISOString().split('T')[0]}`;
-                        break;
-                    
-                    case 'batteries':
-                        if (App.state.localCache.batteries.length === 0) {
-                            App.showToast("Info", "No batteries to export.", "info");
-                            return;
-                        }
-                        data = App.state.localCache.batteries.map(b => ({
-                            batteryNumber: b.batteryNumber,
-                            market: b.market,
-                            color: b.color || 'default',
-                            status: b.status
-                        }));
-                        filename = `Battery_List_${new Date().toISOString().split('T')[0]}`;
-                        break;
-                    
-                    case 'markets':
-                        if (App.state.markets.length === 0) {
-                            App.showToast("Info", "No markets to export.", "info");
-                            return;
-                        }
-                        data = App.state.markets.map(m => ({
-                            marketName: m
-                        }));
-                        filename = `Market_List_${new Date().toISOString().split('T')[0]}`;
-                        break;
-
-                    default:
-                        App.showToast("Error", "Unknown export type.", "error");
-                        return;
-                }
-
-                if (data.length === 0) {
-                    App.showToast("Info", "No data to export.", "info");
-                    return;
-                }
-
-                try {
-                    // Use the existing SheetJS library
-                    const ws = XLSX.utils.json_to_sheet(data);
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "Data");
-                    XLSX.writeFile(wb, `${filename}.xlsx`);
-                    App.showToast("Success", `${type.charAt(0).toUpperCase() + type.slice(1)} exported successfully.`, "success");
-                } catch (error) {
-                    console.error("Export failed:", error);
-                    App.showToast("Error", "File export failed.", "error");
-                }
             },
 
             downloadFile: (content, fileName, contentType) => {
