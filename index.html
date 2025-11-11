@@ -2283,7 +2283,13 @@
                         const batch = fb.writeBatch(fb.db);
                         let addedCount = 0;
                         let failedCount = 0;
-                        const existingSerials = new Set(App.state.localCache.customers.map(c => c.serialNumber).filter(s => s));
+
+                        // --- MODIFICATION: Make checks case-insensitive ---
+                        // Create a map for case-insensitive market matching (e.g., 'sunday' -> 'Sunday')
+                        const marketMap = new Map(App.state.markets.map(m => [m.toLowerCase(), m]));
+                        // Create a set of lowercase serials for duplicate checking
+                        const existingSerials = new Set(App.state.localCache.customers.map(c => c.serialNumber.toLowerCase()).filter(s => s));
+                        // --- End Modification ---
 
                         for (const row of jsonData) {
                             const name = row.name ? String(row.name).trim() : '';
@@ -2296,27 +2302,34 @@
                                 continue;
                             }
                             
-                            // Check if market exists
-                            if (!App.state.markets.includes(market)) {
+                            // --- MODIFICATION: Case-insensitive market check ---
+                            const marketLower = market.toLowerCase();
+                            if (!marketMap.has(marketLower)) {
                                 App.showToast("Error", `Market "${market}" for customer "${name}" does not exist in Settings. Import stopped.`, "error");
                                 // Stop the whole import if a market is bad
                                 return;
                             }
+                            // Get the *correctly* cased market name from our map
+                            const correctMarket = marketMap.get(marketLower);
+                            // --- End Modification ---
 
-                            // Check for duplicate serial
+
+                            // --- MODIFICATION: Case-insensitive serial check ---
                             if (serial) {
-                                if (existingSerials.has(serial)) {
+                                const serialLower = serial.toLowerCase();
+                                if (existingSerials.has(serialLower)) {
                                     console.warn(`Skipping duplicate serial: ${serial}`);
                                     failedCount++;
                                     continue; // Skip duplicate
                                 }
-                                existingSerials.add(serial); // Add to set for this batch
+                                existingSerials.add(serialLower); // Add to set for this batch
                             }
+                            // --- End Modification ---
 
                             // All good, add to batch
                             const newCustomer = {
                                 name: name,
-                                market: market,
+                                market: correctMarket, // Use the correctly-cased market name
                                 mobile: row.mobile ? String(row.mobile).trim() : '',
                                 address: row.address ? String(row.address).trim() : '',
                                 serialNumber: serial,
@@ -2342,7 +2355,8 @@
 
                     } catch (error) {
                         console.error("Import failed:", error);
-                        App.showToast("Error", "File import failed. Check file format & data.", "error");
+                        // *** MODIFICATION: Show the specific error message ***
+                        App.showToast("Error", `Import Failed: ${error.message}`, "error");
                     } finally {
                         event.target.value = null; // Reset file input
                     }
