@@ -921,7 +921,8 @@
                     batteries: `artifacts/${appId}/public/data/batteries`,
                     transactions: `artifacts/${appId}/public/data/transactions`,
                     settings: `artifacts/${appId}/public/data/settings`
-                }
+                },
+                cacheTTL: 15 * 60 * 1000 // 15 minutes in milliseconds
             },
 
             /**
@@ -1011,10 +1012,16 @@
                 // ... existing app logic init ...
                 console.log("Initializing app logic and data listeners...");
                 App.state.globalMarketFilter = localStorage.getItem('battery-manager-market') || 'All';
-                App.Settings.loadAndListen();
-                App.Customers.listenForUpdates();
-                App.Batteries.listenForUpdates();
-                App.Return.listenForUpdates(); 
+                App.Settings.loadAndListen(); // This one is fine, it's a single doc
+                
+                // OLD way (too many reads)
+                // App.Customers.listenForUpdates();
+                // App.Batteries.listenForUpdates();
+                // App.Return.listenForUpdates(); 
+
+                // NEW way (efficient)
+                App.initDataListeners();
+                
                 App.navigateTo('dashboard');
                 App.state.isDataReady = true;
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -1109,7 +1116,10 @@
                         }
                     }
                 });
-                App.renderCurrentPage();
+                
+                // OLD: App.renderCurrentPage();
+                // NEW: Re-initialize listeners for the new market. This will auto-render.
+                App.initDataListeners();
             },
 
             populateMarketSelects: () => {
@@ -1162,6 +1172,49 @@
         };
 
         // ----------------------------------------
+        // NEW CACHING HELPER FUNCTIONS
+        // ----------------------------------------
+        App.setCache = (key, data) => {
+            try {
+                const cacheEntry = {
+                    timestamp: new Date().getTime(),
+                    data: data
+                };
+                localStorage.setItem(`brm-cache-${key}`, JSON.stringify(cacheEntry));
+                console.log(`Cache set for: ${key}`);
+            } catch (e) {
+                console.error("Error setting cache (data might be too large):", e);
+                localStorage.removeItem(`brm-cache-${key}`); // Clear partial cache
+            }
+        };
+
+        App.getCache = (key) => {
+            const entry = localStorage.getItem(`brm-cache-${key}`);
+            if (!entry) {
+                console.log(`Cache miss for: ${key}`);
+                return null;
+            }
+
+            try {
+                const cacheEntry = JSON.parse(entry);
+                const isStale = (new Date().getTime() - cacheEntry.timestamp) > App.state.cacheTTL;
+                
+                if (isStale) {
+                    console.log(`Cache is STALE for: ${key}`);
+                    localStorage.removeItem(`brm-cache-${key}`);
+                    return null;
+                }
+                
+                console.log(`Cache HIT for: ${key}`);
+                return cacheEntry.data;
+            } catch (e) {
+                console.error("Error reading cache:", e);
+                localStorage.removeItem(`brm-cache-${key}`);
+                return null;
+            }
+        };
+
+        // ----------------------------------------
         // 3. DASHBOARD MODULE (Firebase)
         // ----------------------------------------
         App.Dashboard = {
@@ -1193,19 +1246,7 @@
         // 4. CUSTOMER MODULE (Firebase)
         // ----------------------------------------
         App.Customers = {
-            listenForUpdates: () => {
-                // ... existing listener ...
-                const q = fb.query(fb.collection(fb.db, App.state.dbPaths.customers), fb.where('isActive', '==', 1));
-                if (App.state.listeners.customers) App.state.listeners.customers(); 
-                App.state.listeners.customers = fb.onSnapshot(q, (snapshot) => {
-                    console.log("Firestore: Customers updated");
-                    App.state.localCache.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.renderCurrentPage(); 
-                }, (error) => {
-                    console.error("Error listening to customers:", error);
-                    App.showToast("Error", "Could not load customers.", "error");
-                });
-            },
+            // OLD listenForUpdates removed. Logic is now in initDataListeners
 
             // *** UPDATED: filterList (search and render) ***
             filterList: () => {
@@ -1464,18 +1505,8 @@
         // ----------------------------------------
         App.Batteries = {
             // ... existing battery module ...
-            listenForUpdates: () => {
-                const q = fb.collection(fb.db, App.state.dbPaths.batteries);
-                if (App.state.listeners.batteries) App.state.listeners.batteries(); 
-                App.state.listeners.batteries = fb.onSnapshot(q, (snapshot) => {
-                    console.log("Firestore: Batteries updated");
-                    App.state.localCache.batteries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.renderCurrentPage();
-                }, (error) => {
-                    console.error("Error listening to batteries:", error);
-                    App.showToast("Error", "Could not load batteries.", "error");
-                });
-            },
+            // OLD listenForUpdates removed. Logic is now in initDataListeners
+            
             filterList: () => {
                 const searchTerm = document.getElementById('battery-search').value.toLowerCase();
                 const statusFilter = document.getElementById('battery-status-filter').value;
@@ -1838,18 +1869,9 @@
             state: {
                 currentCustomer: null
             },
-            listenForUpdates: () => {
-                const q = fb.query(fb.collection(fb.db, App.state.dbPaths.transactions));
-                if (App.state.listeners.transactions) App.state.listeners.transactions();
-                App.state.listeners.transactions = fb.onSnapshot(q, (snapshot) => {
-                    console.log("Firestore: Transactions updated");
-                    App.state.localCache.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    App.renderCurrentPage();
-                }, (error) => {
-                    console.error("Error listening to transactions:", error);
-                    App.showToast("Error", "Could not load transactions.", "error");
-                });
-            },
+            
+            // OLD listenForUpdates removed. Logic is now in initDataListeners
+
             renderList: () => {
                 const listEl = document.getElementById('return-pending-list');
                 const allCustomers = App.state.localCache.customers;
@@ -1958,6 +1980,112 @@
                     console.error("Error marking as returned:", error);
                     App.showToast("Error", `Could not mark battery as returned: ${error.message}`, "error");
                 }
+            }
+        };
+
+        // ----------------------------------------
+        // NEW MASTER LISTENER FUNCTION
+        // ----------------------------------------
+        App.initDataListeners = () => {
+            console.log(`Initializing listeners for market: ${App.state.globalMarketFilter}`);
+            const market = App.state.globalMarketFilter;
+
+            // --- Unsubscribe from any old listeners ---
+            if (App.state.listeners.customers) App.state.listeners.customers();
+            if (App.state.listeners.batteries) App.state.listeners.batteries();
+            if (App.state.listeners.transactions) App.state.listeners.transactions();
+
+            // --- Base Queries ---
+            let customerQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.customers), fb.where('isActive', '==', 1));
+            let batteryQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries));
+            let transactionQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.transactions));
+
+            if (market !== 'All') {
+                // --- LIVE MODE: Specific market selected. Use REAL-TIME listeners ---
+                console.log("Using real-time listeners (onSnapshot) for market:", market);
+                customerQuery = fb.query(customerQuery, fb.where('market', '==', market));
+                batteryQuery = fb.query(batteryQuery, fb.where('market', '==', market));
+                transactionQuery = fb.query(transactionQuery, fb.where('market', '==', market));
+                
+                // Customer Listener
+                App.state.listeners.customers = fb.onSnapshot(customerQuery, (snapshot) => {
+                    console.log(`Firestore: Customers updated (Market: ${market}) - ${snapshot.size} docs`);
+                    App.state.localCache.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.renderCurrentPage();
+                }, (error) => { 
+                    console.error("Error listening to customers:", error);
+                    App.showToast("Error", "Could not load customers.", "error");
+                });
+
+                // Battery Listener
+                App.state.listeners.batteries = fb.onSnapshot(batteryQuery, (snapshot) => {
+                    console.log(`Firestore: Batteries updated (Market: ${market}) - ${snapshot.size} docs`);
+                    App.state.localCache.batteries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.renderCurrentPage();
+                }, (error) => { 
+                    console.error("Error listening to batteries:", error);
+                    App.showToast("Error", "Could not load batteries.", "error");
+                });
+
+                // Transaction Listener
+                App.state.listeners.transactions = fb.onSnapshot(transactionQuery, (snapshot) => {
+                    console.log(`Firestore: Transactions updated (Market: ${market}) - ${snapshot.size} docs`);
+                    App.state.localCache.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.renderCurrentPage();
+                }, (error) => { 
+                    console.error("Error listening to transactions:", error);
+                    App.showToast("Error", "Could not load transactions.", "error");
+                });
+
+            } else {
+                // --- MANUAL MODE: "All Markets" selected. Use ONE-TIME fetch (getDocs) ---
+                console.log("Using one-time fetch (getDocs) for 'All Markets'");
+
+                // --- NEW CACHE LOGIC ---
+                const cachedCustomers = App.getCache('customers-all');
+                const cachedBatteries = App.getCache('batteries-all');
+                const cachedTransactions = App.getCache('transactions-all');
+
+                if (cachedCustomers && cachedBatteries && cachedTransactions) {
+                    console.log("Loading 'All Markets' from CACHE");
+                    App.showToast("Info", "Loaded data from cache (fast).", "info");
+                    
+                    App.state.localCache.customers = cachedCustomers;
+                    App.state.localCache.batteries = cachedBatteries;
+                    App.state.localCache.transactions = cachedTransactions;
+                    
+                    App.renderCurrentPage();
+                    return; // Stop here, we don't need to fetch
+                }
+                // --- END NEW CACHE LOGIC ---
+
+
+                App.showToast("Info", "Loading all market data from Firebase... (slower)", "info");
+                
+                // We use Promise.all to fetch all data at once
+                Promise.all([
+                    fb.getDocs(customerQuery),
+                    fb.getDocs(batteryQuery),
+                    fb.getDocs(transactionQuery)
+                ]).then(([customerSnapshot, batterySnapshot, transactionSnapshot]) => {
+                    console.log(`Firestore: Fetched ${customerSnapshot.size} customers, ${batterySnapshot.size} batteries, ${transactionSnapshot.size} transactions.`);
+                    
+                    App.state.localCache.customers = customerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.state.localCache.batteries = batterySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    App.state.localCache.transactions = transactionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // --- NEW: Save to cache ---
+                    App.setCache('customers-all', App.state.localCache.customers);
+                    App.setCache('batteries-all', App.state.localCache.batteries);
+                    App.setCache('transactions-all', App.state.localCache.transactions);
+
+                    App.renderCurrentPage();
+                    App.showToast("Success", "Loaded and cached all market data.", "success");
+                    
+                }).catch(error => {
+                    console.error("Error fetching 'All Markets' data:", error);
+                    App.showToast("Error", "Failed to load all market data.", "error");
+                });
             }
         };
 
