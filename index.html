@@ -158,7 +158,7 @@
                     <!-- Markets will be populated here -->
                 </select>
             </div>
-           
+            
             <!-- Stats Cards -->
             <div class="row g-2 mb-3">
                 <div class="col-6">
@@ -238,7 +238,7 @@
             <!-- ... existing give battery page ... -->
             <h2 class="h4 mb-3">Give Battery (Manual Entry)</h2>
             <p>This page is for assigning *specific* battery numbers to a customer.</p>
-           
+            
             <form id="giveBatteryForm" onsubmit="App.Give.submit(); return false;">
                 <!-- Step 1: Select Market -->
                 <div class="mb-3">
@@ -282,7 +282,7 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: RETURN BATTERY                       == -->
+        <!-- == PAGE: RETURN BATTERY                        == -->
         <!-- ============================================== -->
         <div id="page-return-battery" class="page">
             <!-- ... existing return battery page ... -->
@@ -304,13 +304,13 @@
                     <i class="bi bi-plus-circle"></i> Add New
                 </button>
             </div>
-           
+            
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <!-- *** UPDATED: Placeholder text *** -->
                 <input type="text" class="form-control" id="customer-search" placeholder="Search by name, serial, phone, or address..." onkeyup="App.Customers.filterList()">
             </div>
-           
+            
             <div class="input-group mb-3">
                 <label class="input-group-text" for="customer-market-filter">Market</label>
                 <select class="form-select" id="customer-market-filter" onchange="App.updateGlobalMarket(this.value)">
@@ -324,7 +324,7 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: BATTERY MANAGEMENT                   == -->
+        <!-- == PAGE: BATTERY MANAGEMENT                    == -->
         <!-- ============================================== -->
         <div id="page-batteries" class="page">
             <!-- ... existing battery page ... -->
@@ -342,13 +342,14 @@
                     </button>
                 </div>
             </div>
-           
+            
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input type="text" class="form-control" id="battery-search" placeholder="Search by battery number..." onkeyup="App.Batteries.filterList()">
             </div>
 
-            <div class="input-group mb-3">
+            <!-- Removed Market Filter from Battery Page to reflect Single Inventory -->
+            <div class="input-group mb-3 d-none">
                 <label class="input-group-text" for="battery-market-filter">Market</label>
                 <select class="form-select" id="battery-market-filter" onchange="App.updateGlobalMarket(this.value)">
                     <option value="All">All Markets</option>
@@ -370,12 +371,12 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: REPORTS                            == -->
+        <!-- == PAGE: REPORTS                             == -->
         <!-- ============================================== -->
         <div id="page-reports" class="page">
             <!-- ... existing reports page ... -->
             <h2 class="h4 mb-3">Reports</h2>
-           
+            
             <div class="row g-2 mb-3">
                 <div class="col-md-4">
                     <label for="report-market" class="form-label">Market</label>
@@ -427,7 +428,7 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- == PAGE: SETTINGS                           == -->
+        <!-- == PAGE: SETTINGS                            == -->
         <!-- ============================================== -->
         <div id="page-settings" class="page">
             <h2 class="h4 mb-3">Settings</h2>
@@ -444,19 +445,39 @@
                     <button class="btn btn-primary" onclick="App.Settings.saveMarkets()">Save Markets</button>
                 </div>
             </div>
-           
-            <!-- *** NEW: Bulk Import Customers *** -->
+            
+            <!-- *** UPDATED: Data Management *** -->
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5 class="card-title">Bulk Import Customers</h5>
-                    <p class="card-text">Upload an Excel (.xlsx) or CSV (.csv) file.
-                        <br><small class="text-muted">Required columns: <strong>name, market</strong></small>
-                        <br><small class="text-muted">Optional columns: <strong>serialNumber, mobile, address</strong></small>
-                    </p>
-                    <span class="btn btn-success btn-file-input">
-                        <i class="bi bi-upload"></i> Choose File & Import
-                        <input type="file" id="customer-import-file" accept=".xlsx, .csv" onchange="App.Settings.handleCustomerImport(event)">
-                    </span>
+                    <h5 class="card-title">Data Management</h5>
+                    <p class="card-text">Import or Export application data.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Import Customers</label>
+                        <p class="small text-muted mb-1">Upload an Excel (.xlsx) or CSV (.csv) file.</p>
+                        <p class="small text-muted mb-2">Required columns: <strong>name, market</strong>. Optional: <strong>serialNumber, mobile, address</strong></p>
+                        <span class="btn btn-success btn-file-input w-100">
+                            <i class="bi bi-upload"></i> Select File & Import
+                            <input type="file" id="customer-import-file" accept=".xlsx, .csv" onchange="App.Settings.handleCustomerImport(event)">
+                        </span>
+                    </div>
+
+                    <div class="border-top pt-3 mb-3">
+                        <label class="form-label fw-bold">Export Customers</label>
+                        <p class="small text-muted mb-2">Download the full customer list as an Excel file.</p>
+                        <button class="btn btn-outline-primary w-100" onclick="App.Settings.exportCustomers()">
+                            <i class="bi bi-person-down"></i> Export Customers List
+                        </button>
+                    </div>
+
+                    <!-- *** NEW: Full Export *** -->
+                    <div class="border-top pt-3">
+                        <label class="form-label fw-bold">Full Database Backup</label>
+                        <p class="small text-muted mb-2">Download ALL data (Customers, Batteries, Transactions) in one file.</p>
+                        <button class="btn btn-dark w-100" onclick="App.Settings.exportAllData()">
+                            <i class="bi bi-database-down"></i> Export Full Database
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -522,12 +543,12 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="customer-id">
-                       
+                        
                         <!-- *** NEW: Customer Serial No. *** -->
                         <div class="mb-3">
                             <label for="customer-serial" class="form-label">Customer Serial No. (Optional)</label>
                             <input type="text" class="form-control" id="customer-serial">
-                            <div class="invalid-feedback" id="customer-serial-error">This serial no. already exists.</div>
+                            <div class="invalid-feedback" id="customer-serial-error">This serial no. already exists in this market.</div>
                         </div>
 
                         <div class="mb-3">
@@ -576,12 +597,7 @@
                             <input type="text" class="form-control" id="battery-number" required>
                             <div class="invalid-feedback" id="battery-number-error"></div>
                         </div>
-                        <div class="mb-3">
-                            <label for="battery-market" class="form-label">Market</label>
-                            <select class="form-select" id="battery-market" required>
-                                <!-- Market options -->
-                            </select>
-                        </div>
+                        <!-- Removed Market Selection -->
                         <div class="mb-3">
                             <label for="battery-color" class="form-label">Battery Color</label>
                             <select class="form-select" id="battery-color">
@@ -629,12 +645,7 @@
                                 <input type="number" class="form-control" id="battery-range-end" required min="1" value="200">
                             </div>
                         </div>
-                        <div class="mb-3 mt-3">
-                            <label for="battery-range-market" class="form-label">Market</label>
-                            <select class="form-select" id="battery-range-market" required>
-                                <!-- Market options -->
-                            </select>
-                        </div>
+                        <!-- Removed Market Selection -->
                         <div class="mb-3 mt-3">
                             <label for="battery-range-color" class="form-label">Battery Color</label>
                             <select class="form-select" id="battery-range-color">
@@ -695,11 +706,12 @@
                         <input type="hidden" id="quick-give-customer-id">
                         <input type="hidden" id="quick-give-customer-market">
                         <p id="quick-give-customer-name-display" class="fw-bold"></p>
-                       
+                        
                         <div class="mb-3">
                             <label for="quick-give-battery-count" class="form-label">Number of batteries to give:</label>
                             <input type="number" class="form-control form-control-lg" id="quick-give-battery-count" required min="1" value="1">
                         </div>
+                        <small class="text-muted">Batteries will be automatically selected from global inventory.</small>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -795,7 +807,7 @@
     <!-- ============================================== -->
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-   
+    
     <!-- SheetJS (Excel Export & Import) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
@@ -833,7 +845,7 @@
         // ----------------------------------------
         // 1. FIREBASE SETUP
         // ----------------------------------------
-       
+        
         // Use provided config variables
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config)
@@ -853,7 +865,7 @@
         const fbApp = initializeApp(firebaseConfig);
         const db = getFirestore(fbApp);
         const auth = getAuth(fbApp);
-       
+        
         // Enable Firestore debug logging
         setLogLevel('debug');
 
@@ -873,18 +885,18 @@
             }
             return chunks;
         };
-       
+        
         // ----------------------------------------
         // 2. MAIN APP CONTROLLER (Firebase-enabled)
         // ----------------------------------------
         const App = {
-           
+            
             // App state
             state: {
                 markets: ['Sunday', 'Wednesday', 'Friday', 'Unassigned'],
                 globalMarketFilter: 'All',
                 currentPage: 'dashboard',
-               
+                
                 // Modal instances
                 currentCustomerModal: null,
                 currentBatteryModal: null,
@@ -894,12 +906,12 @@
                 currentResetModal: null, 
                 currentClearAllModal: null, 
                 appToast: null,
-               
+                
                 // Auth & Data State
                 userId: null,
                 isAuthReady: false,
                 isDataReady: false,
-               
+                
                 // Firestore Listeners (to unsubscribe later)
                 listeners: {
                     customers: null,
@@ -907,14 +919,14 @@
                     transactions: null,
                     settings: null
                 },
-               
+                
                 // Local Caches (for filtering)
                 localCache: {
                     customers: [],
                     batteries: [],
                     transactions: []
                 },
-               
+                
                 // Firestore Paths
                 dbPaths: {
                     customers: `artifacts/${appId}/public/data/customers`,
@@ -1007,7 +1019,7 @@
                     }
                 });
             },
-           
+            
             initAppLogic: () => {
                 // ... existing app logic init ...
                 console.log("Initializing app logic and data listeners...");
@@ -1132,7 +1144,8 @@
                     if (select.id.includes('Filter') || select.id.includes('report')) {
                         options += '<option value="All">All Markets</option>';
                     }
-                    if (select.id.includes('give') || select.id === 'battery-market' || select.id === 'battery-range-market' || select.id === 'customer-market') {
+                    // Updated: Removed battery-related selects from this logic as they no longer exist or don't need market
+                    if (select.id.includes('give') || select.id === 'customer-market') {
                         options += '<option value="">-- Select a Market --</option>';
                     }
                     App.state.markets.forEach(market => {
@@ -1140,7 +1153,7 @@
                     });
                     select.innerHTML = options;
                     if (Array.from(select.options).some(opt => opt.value === currentVal)) {
-                         select.value = currentVal;
+                          select.value = currentVal;
                     } else if (Array.from(select.options).some(opt => opt.value === globalMarket)) {
                         select.value = globalMarket;
                     } else {
@@ -1226,12 +1239,20 @@
                 try {
                     const allBatteries = App.state.localCache.batteries;
                     const allTransactions = App.state.localCache.transactions;
-                    const batteries = marketFilter ? allBatteries.filter(b => b.market === marketFilter) : allBatteries;
+                    // Batteries are now GLOBAL, so we don't filter them by market for stats unless explicitly requested.
+                    // But wait, dashboard stats usually reflect "Stock in Market". 
+                    // Since stock is global, Total and Available should show GLOBAL counts.
+                    // Rented and Pending should filter by transaction market.
+                    
                     const transactions = marketFilter ? allTransactions.filter(t => t.market === marketFilter) : allTransactions;
-                    const total = batteries.length;
-                    const available = batteries.filter(b => b.status === 'Available').length;
-                    const rented = batteries.filter(b => b.status === 'Given').length;
+                    
+                    // Battery stats: Global
+                    const total = allBatteries.length;
+                    const available = allBatteries.filter(b => b.status === 'Available').length;
+                    const rented = allBatteries.filter(b => b.status === 'Given').length;
+                    
                     const pending = transactions.filter(t => t.status === 'Pending').length;
+                    
                     document.getElementById('stat-total').textContent = total;
                     document.getElementById('stat-available').textContent = available;
                     document.getElementById('stat-rented').textContent = rented;
@@ -1310,7 +1331,7 @@
                 form.classList.remove('was-validated');
                 document.getElementById('customer-id').value = '';
                 document.getElementById('customer-serial').classList.remove('is-invalid'); // Reset error
-               
+                
                 if (id) {
                     // Edit mode
                     document.getElementById('customerModalTitle').textContent = 'Edit Customer';
@@ -1335,9 +1356,10 @@
                 App.state.currentCustomerModal.show();
             },
 
-            // *** NEW: getNextSerialNumber ***
-            getNextSerialNumber: () => {
-                const customers = App.state.localCache.customers;
+            // *** NEW: getNextSerialNumber (Market-Specific) ***
+            getNextSerialNumber: (market) => {
+                // Filter customers by the specified market first
+                const customers = App.state.localCache.customers.filter(c => c.market === market);
                 let maxSerial = 0;
                 for (const customer of customers) {
                     if (customer.serialNumber) {
@@ -1361,16 +1383,17 @@
                 const id = document.getElementById('customer-id').value;
                 const serialInput = document.getElementById('customer-serial');
                 const serial = serialInput.value.trim();
-               
-                // --- NEW: Auto-increment logic ---
+                const market = document.getElementById('customer-market').value;
+                
+                // --- NEW: Auto-increment logic (Market-Specific) ---
                 let finalSerial = serial;
                 if (!id && !serial) { // Only auto-increment on ADD and if serial is BLANK
-                    finalSerial = App.Customers.getNextSerialNumber();
+                    finalSerial = App.Customers.getNextSerialNumber(market);
                 }
                 // --- End new logic ---
 
                 const customerData = {
-                    market: document.getElementById('customer-market').value,
+                    market: market,
                     name: document.getElementById('customer-name').value,
                     mobile: document.getElementById('customer-mobile').value,
                     address: document.getElementById('customer-address').value,
@@ -1379,15 +1402,16 @@
                 };
 
                 try {
-                    // Check for duplicate serial number
-                    if (finalSerial) { // Check using finalSerial
+                    // Check for duplicate serial number IN THIS MARKET
+                    if (finalSerial) { 
                         const q = fb.query(
                             fb.collection(fb.db, App.state.dbPaths.customers), 
-                            fb.where('serialNumber', '==', finalSerial), // Check using finalSerial
+                            fb.where('serialNumber', '==', finalSerial), 
+                            fb.where('market', '==', market), // Scoped to market
                             fb.where('isActive', '==', 1)
                         );
                         const snapshot = await fb.getDocs(q);
-                       
+                        
                         let isDuplicate = false;
                         if (!snapshot.empty) {
                             if (id) { // Edit mode
@@ -1400,7 +1424,7 @@
 
                         if (isDuplicate) {
                             serialInput.classList.add('is-invalid');
-                            App.showToast("Error", `Serial number "${finalSerial}" already exists.`, "error"); // Use finalSerial
+                            App.showToast("Error", `Serial number "${finalSerial}" already exists in ${market}.`, "error"); 
                             return;
                         }
                     }
@@ -1465,15 +1489,15 @@
                     return;
                 }
                 try {
+                    // UPDATED: Query ALL available batteries, ignore market
                     const q = fb.query(
                         fb.collection(fb.db, App.state.dbPaths.batteries),
-                        fb.where('market', '==', market),
                         fb.where('status', '==', 'Available'),
                         fb.limit(count)
                     );
                     const snapshot = await fb.getDocs(q);
                     if (snapshot.docs.length < count) {
-                        App.showToast("Error", `Only ${snapshot.docs.length} batteries are available in ${market}.`, "error");
+                        App.showToast("Error", `Only ${snapshot.docs.length} batteries are available in total.`, "error");
                         return;
                     }
                     const batch = fb.writeBatch(fb.db);
@@ -1483,7 +1507,7 @@
                         batch.set(transRef, {
                             customerId: customerId,
                             batteryNumber: battery.batteryNumber,
-                            market: market,
+                            market: market, // Transaction still has market
                             dateGiven: fb.serverTimestamp(),
                             dateReturned: null,
                             status: 'Pending'
@@ -1510,13 +1534,13 @@
             filterList: () => {
                 const searchTerm = document.getElementById('battery-search').value.toLowerCase();
                 const statusFilter = document.getElementById('battery-status-filter').value;
-                const marketFilter = document.getElementById('battery-market-filter').value;
+                // const marketFilter = document.getElementById('battery-market-filter').value; // Removed filter
                 const batteries = App.state.localCache.batteries;
                 const filteredBatteries = batteries.filter(b => {
                     const inStatus = (statusFilter === 'All' || b.status === statusFilter);
-                    const inMarket = (marketFilter === 'All' || b.market === marketFilter);
+                    // const inMarket = (marketFilter === 'All' || b.market === marketFilter); // Removed check
                     const inSearch = b.batteryNumber.toLowerCase().includes(searchTerm);
-                    return inStatus && inMarket && inSearch;
+                    return inStatus && inSearch;
                 });
                 const listEl = document.getElementById('battery-list');
                 listEl.innerHTML = '';
@@ -1533,7 +1557,7 @@
                             <div style="min-width: 0; margin-right: 1rem; flex-grow: 1;"> <!-- Grow and wrap -->
                                 <span class="batt-color-dot batt-color-${colorClass}"></span>
                                 <h6 class="mb-0 d-inline-block" style="word-wrap: break-word;">${battery.batteryNumber}</h6>
-                                <small class="text-muted d-block">${battery.market || 'Unassigned'}</small>
+                                <small class="text-muted d-block">${battery.market || 'Global'}</small>
                             </div>
                             <div style="flex-shrink: 0;" class="d-flex align-items-center"> <!-- Don't shrink -->
                                 <span class="badge rounded-pill me-3 status-${statusClass.replace('status-', '')}">${statusText}</span>
@@ -1553,10 +1577,6 @@
                 document.getElementById('batteryModalTitle').textContent = 'Add Battery';
                 document.getElementById('battery-number').classList.remove('is-invalid');
                 document.getElementById('battery-number-error').textContent = '';
-                const globalMarket = App.state.globalMarketFilter;
-                if (globalMarket !== 'All') {
-                    document.getElementById('battery-market').value = globalMarket;
-                }
                 App.state.currentBatteryModal.show();
             },
             save: async () => {
@@ -1566,11 +1586,7 @@
                 if (!form.checkValidity()) return;
                 const batteryNumber = numberInput.value.trim();
                 const batteryColor = document.getElementById('battery-color').value;
-                const batteryMarket = document.getElementById('battery-market').value;
-                if (!batteryMarket) {
-                    App.showToast("Error", "Please select a market for the battery.", "error");
-                    return;
-                }
+                
                 try {
                     const q = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries), fb.where('batteryNumber', '==', batteryNumber));
                     const snapshot = await fb.getDocs(q);
@@ -1585,7 +1601,7 @@
                         batteryNumber: batteryNumber,
                         status: 'Available',
                         color: batteryColor,
-                        market: batteryMarket
+                        market: 'Global' // Hardcoded Global
                     });
                     App.showToast("Success", `Battery ${batteryNumber} added.`);
                     App.state.currentBatteryModal.hide();
@@ -1596,10 +1612,6 @@
             },
             showRangeModal: () => {
                 document.getElementById('batteryRangeForm').reset();
-                const globalMarket = App.state.globalMarketFilter;
-                if (globalMarket !== 'All') {
-                    document.getElementById('battery-range-market').value = globalMarket;
-                }
                 App.state.currentBatteryRangeModal.show();
             },
             saveRange: async () => {
@@ -1607,11 +1619,7 @@
                 const start = parseInt(document.getElementById('battery-range-start').value);
                 const end = parseInt(document.getElementById('battery-range-end').value);
                 const color = document.getElementById('battery-range-color').value;
-                const market = document.getElementById('battery-range-market').value;
-                if (!market) {
-                    App.showToast("Error", "Please select a market.", "error");
-                    return;
-                }
+                
                 if (!start || !end || start <= 0 || end <= 0 || end < start) {
                     App.showToast("Error", "Invalid start/end numbers.", "error");
                     return;
@@ -1632,7 +1640,7 @@
                         batteryNumber: batteryNumber,
                         status: 'Available',
                         color: color,
-                        market: market
+                        market: 'Global'
                     });
                 }
                 try {
@@ -1693,7 +1701,9 @@
                 document.getElementById('giveBatteryForm').reset();
                 document.getElementById('give-customer-list').innerHTML = '';
                 document.getElementById('give-customer-id').value = '';
-                document.getElementById('give-available-battery-list').innerHTML = '<small class="text-muted">Select a market to see available batteries.</small>';
+                // Trigger load for all available batteries immediately
+                App.Give.loadAvailableBatteries();
+                
                 App.populateMarketSelects();
                 const globalMarket = App.state.globalMarketFilter;
                 document.getElementById('give-market').value = (globalMarket !== 'All') ? globalMarket : ''; 
@@ -1703,12 +1713,12 @@
                 const market = document.getElementById('give-market').value;
                 const customerListEl = document.getElementById('give-customer-list');
                 const customerSearchEl = document.getElementById('give-customer-search');
-                const availableBatteryListEl = document.getElementById('give-available-battery-list');
+                
                 document.getElementById('give-customer-id').value = '';
-                document.getElementById('give-battery-numbers').value = '';
+                // document.getElementById('give-battery-numbers').value = ''; // Don't clear selected batteries when changing market
+                
                 if (!market) {
                     customerListEl.innerHTML = '<li class="list-group-item">Select a market to see customers.</li>';
-                    availableBatteryListEl.innerHTML = '<small class="text-muted">Select a market to see available batteries.</small>';
                     customerSearchEl.disabled = true;
                     return;
                 }
@@ -1738,20 +1748,25 @@
                     customerListEl.innerHTML = customerItems;
                     App.Give.filterCustomers(); 
                 }
+            },
+            // NEW: Separated battery loading from market selection
+            loadAvailableBatteries: () => {
+                const availableBatteryListEl = document.getElementById('give-available-battery-list');
                 try {
+                    // Filter ALL Available batteries (Single Inventory)
                     const availableBatteries = App.state.localCache.batteries.filter(
-                        b => b.market === market && b.status === 'Available'
+                        b => b.status === 'Available'
                     );
                     if (availableBatteries.length === 0) {
-                        availableBatteryListEl.innerHTML = '<small class="text-muted">No available batteries in this market.</small>';
+                        availableBatteryListEl.innerHTML = '<small class="text-muted">No available batteries in inventory.</small>';
                     } else {
                         availableBatteries.sort((a, b) => a.batteryNumber.localeCompare(b.batteryNumber, undefined, { numeric: true }));
                         availableBatteryListEl.innerHTML = availableBatteries.map(battery => {
                             const colorClass = battery.color || 'default';
                             return `<button type="button" class="btn btn-sm btn-outline-success m-1" onclick="App.Give.selectAvailableBattery(this, '${battery.batteryNumber}')">
-                                        <span class="batt-color-dot batt-color-${colorClass}" style="width: 8px; height: 8px; margin-right: 4px; vertical-align: middle;"></span>
-                                        ${battery.batteryNumber}
-                                    </button>`;
+                                            <span class="batt-color-dot batt-color-${colorClass}" style="width: 8px; height: 8px; margin-right: 4px; vertical-align: middle;"></span>
+                                            ${battery.batteryNumber}
+                                        </button>`;
                         }).join('');
                     }
                 } catch (error) {
@@ -1804,7 +1819,7 @@
                     return;
                 }
                 if (batteryNumbers.length > 30) {
-                     App.showToast("Error", "Cannot give more than 30 batteries in one manual transaction.", "error");
+                      App.showToast("Error", "Cannot give more than 30 batteries in one manual transaction.", "error");
                     return;
                 }
                 try {
@@ -1813,7 +1828,7 @@
                     const errors = [];
                     const notFound = [];
                     const validBatteryDocs = [];
-                    const wrongMarket = [];
+                    // const wrongMarket = []; // Removed check
                     const batteryMap = new Map(snapshot.docs.map(doc => [doc.data().batteryNumber, doc]));
                     for (const num of batteryNumbers) {
                         const batteryDoc = batteryMap.get(num);
@@ -1823,16 +1838,13 @@
                             const battery = batteryDoc.data();
                             if (battery.status !== 'Available') {
                                 errors.push(`${num} is already ${battery.status}.`);
-                            } else if (battery.market !== market) {
-                                wrongMarket.push(`${num} (belongs to ${battery.market})`);
                             } else {
                                 validBatteryDocs.push(batteryDoc);
                             }
                         }
                     }
-                    if (notFound.length > 0 || wrongMarket.length > 0 || errors.length > 0) {
+                    if (notFound.length > 0 || errors.length > 0) {
                         if(notFound.length > 0) App.showToast("Error", `Batteries not found: ${notFound.join(', ')}`, "error");
-                        if(wrongMarket.length > 0) App.showToast("Error", `Batteries from wrong market: ${wrongMarket.join(', ')}`, "error");
                         if(errors.length > 0) App.showToast("Error", errors.join(' '), "error");
                         return;
                     }
@@ -1997,6 +2009,7 @@
 
             // --- Base Queries ---
             let customerQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.customers), fb.where('isActive', '==', 1));
+            // Updated: Battery query is always GLOBAL now
             let batteryQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.batteries));
             let transactionQuery = fb.query(fb.collection(fb.db, App.state.dbPaths.transactions));
 
@@ -2004,7 +2017,7 @@
                 // --- LIVE MODE: Specific market selected. Use REAL-TIME listeners ---
                 console.log("Using real-time listeners (onSnapshot) for market:", market);
                 customerQuery = fb.query(customerQuery, fb.where('market', '==', market));
-                batteryQuery = fb.query(batteryQuery, fb.where('market', '==', market));
+                // batteryQuery = fb.query(batteryQuery, fb.where('market', '==', market)); // Removed market filter for batteries
                 transactionQuery = fb.query(transactionQuery, fb.where('market', '==', market));
                 
                 // Customer Listener
@@ -2017,9 +2030,9 @@
                     App.showToast("Error", "Could not load customers.", "error");
                 });
 
-                // Battery Listener
+                // Battery Listener (Global)
                 App.state.listeners.batteries = fb.onSnapshot(batteryQuery, (snapshot) => {
-                    console.log(`Firestore: Batteries updated (Market: ${market}) - ${snapshot.size} docs`);
+                    console.log(`Firestore: Batteries updated (Global) - ${snapshot.size} docs`);
                     App.state.localCache.batteries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     App.renderCurrentPage();
                 }, (error) => { 
@@ -2240,7 +2253,7 @@
                             App.showToast("Error", "File is empty or not formatted correctly.", "error");
                             return;
                         }
-                       
+                        
                         if (jsonData.length > 400) {
                             App.showToast("Error", "Cannot import more than 400 customers at a time.", "error");
                             return;
@@ -2259,34 +2272,39 @@
                         const batch = fb.writeBatch(fb.db);
                         let addedCount = 0;
                         let failedCount = 0;
-                        const existingSerials = new Set(App.state.localCache.customers.map(c => c.serialNumber).filter(s => s));
+                        
+                        // Use composite keys: market + serial for uniqueness
+                        const existingMap = new Set();
+                        App.state.localCache.customers.forEach(c => {
+                            if(c.serialNumber) existingMap.add(`${c.market}-${c.serialNumber}`);
+                        });
 
                         for (const row of jsonData) {
                             const name = row.name ? String(row.name).trim() : '';
                             const market = row.market ? String(row.market).trim() : '';
                             const serial = row.serialNumber ? String(row.serialNumber).trim() : '';
-                           
+                            
                             // Basic validation
                             if (!name || !market) {
                                 failedCount++;
                                 continue;
                             }
-                           
+                            
                             // Check if market exists
                             if (!App.state.markets.includes(market)) {
                                 App.showToast("Error", `Market "${market}" for customer "${name}" does not exist in Settings. Import stopped.`, "error");
-                                // Stop the whole import if a market is bad
                                 return;
                             }
 
-                            // Check for duplicate serial
+                            // Check for duplicate serial (Market-Specific)
                             if (serial) {
-                                if (existingSerials.has(serial)) {
-                                    console.warn(`Skipping duplicate serial: ${serial}`);
+                                const key = `${market}-${serial}`;
+                                if (existingMap.has(key)) {
+                                    console.warn(`Skipping duplicate serial in ${market}: ${serial}`);
                                     failedCount++;
                                     continue; // Skip duplicate
                                 }
-                                existingSerials.add(serial); // Add to set for this batch
+                                existingMap.add(key); // Add to set for this batch
                             }
 
                             // All good, add to batch
@@ -2298,7 +2316,7 @@
                                 serialNumber: serial,
                                 isActive: 1
                             };
-                           
+                            
                             const docRef = fb.doc(fb.collection(fb.db, App.state.dbPaths.customers));
                             batch.set(docRef, newCustomer);
                             addedCount++;
@@ -2324,6 +2342,123 @@
                     }
                 };
                 reader.readAsBinaryString(file);
+            },
+
+            // *** NEW: Export Customers ***
+            exportCustomers: () => {
+                const customers = App.state.localCache.customers;
+                if (!customers || customers.length === 0) {
+                    App.showToast("Info", "No customers to export.", "info");
+                    return;
+                }
+                
+                const exportData = customers.map(c => ({
+                    market: c.market,
+                    name: c.name,
+                    serialNumber: c.serialNumber,
+                    mobile: c.mobile,
+                    address: c.address
+                }));
+
+                // Sort by Market then Name
+                exportData.sort((a, b) => {
+                    if (a.market < b.market) return -1;
+                    if (a.market > b.market) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Customers");
+                const filename = `Customers_List_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, filename);
+                App.showToast("Success", "Customer list downloaded.");
+            },
+
+            // *** NEW: Export All Data (Full Backup) ***
+            exportAllData: async () => {
+                App.showToast("Info", "Preparing full database export...", "info");
+                
+                try {
+                    // Fetch all collections directly to ensure we have everything regardless of current view
+                    const [custSnap, battSnap, transSnap] = await Promise.all([
+                        fb.getDocs(fb.collection(fb.db, App.state.dbPaths.customers)),
+                        fb.getDocs(fb.collection(fb.db, App.state.dbPaths.batteries)),
+                        fb.getDocs(fb.collection(fb.db, App.state.dbPaths.transactions))
+                    ]);
+
+                    const customers = custSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const batteries = battSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const transactions = transSnap.docs.map(doc => {
+                        const d = doc.data();
+                        return {
+                            id: doc.id,
+                            ...d,
+                            dateGiven: d.dateGiven?.toDate ? d.dateGiven.toDate().toLocaleString() : d.dateGiven,
+                            dateReturned: d.dateReturned?.toDate ? d.dateReturned.toDate().toLocaleString() : d.dateReturned
+                        };
+                    });
+
+                    const wb = XLSX.utils.book_new();
+
+                    // 1. Customers Sheet
+                    if (customers.length) {
+                        const custData = customers.map(c => ({
+                            Name: c.name,
+                            Market: c.market,
+                            'Serial No': c.serialNumber,
+                            Mobile: c.mobile,
+                            Address: c.address,
+                            Active: c.isActive ? 'Yes' : 'No'
+                        }));
+                        // Sort
+                        custData.sort((a, b) => (a.Market || '').localeCompare(b.Market || '') || (a.Name || '').localeCompare(b.Name || ''));
+                        const wsCust = XLSX.utils.json_to_sheet(custData);
+                        XLSX.utils.book_append_sheet(wb, wsCust, "Customers");
+                    }
+
+                    // 2. Batteries Sheet
+                    if (batteries.length) {
+                        const battData = batteries.map(b => ({
+                            'Battery No': b.batteryNumber,
+                            Status: b.status,
+                            Color: b.color,
+                            Market: b.market // Usually 'Global' now, but keeping for history
+                        }));
+                        // Sort by Battery Number
+                        battData.sort((a, b) => a['Battery No'].localeCompare(b['Battery No'], undefined, { numeric: true }));
+                        const wsBatt = XLSX.utils.json_to_sheet(battData);
+                        XLSX.utils.book_append_sheet(wb, wsBatt, "Batteries");
+                    }
+
+                    // 3. Transactions Sheet
+                    if (transactions.length) {
+                        // Create map for quick customer name lookup
+                        const custMap = new Map(customers.map(c => [c.id, c.name]));
+                        
+                        const transData = transactions.map(t => ({
+                            'Battery No': t.batteryNumber,
+                            Customer: custMap.get(t.customerId) || 'Unknown/Deleted',
+                            Market: t.market,
+                            Status: t.status,
+                            'Date Given': t.dateGiven,
+                            'Date Returned': t.dateReturned
+                        }));
+                        
+                        // Sort by Date Given (descending approx by string logic or id if needed, usually latest first is better)
+                        // For simplicity, let's just leave as is or sort by date string
+                        const wsTrans = XLSX.utils.json_to_sheet(transData);
+                        XLSX.utils.book_append_sheet(wb, wsTrans, "Transactions");
+                    }
+
+                    const filename = `Full_Backup_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    XLSX.writeFile(wb, filename);
+                    App.showToast("Success", "Full database export complete.");
+
+                } catch (error) {
+                    console.error("Export all failed:", error);
+                    App.showToast("Error", "Failed to export data. Check console.", "error");
+                }
             },
 
             downloadFile: (content, fileName, contentType) => {
